@@ -11,8 +11,9 @@ const chalk = require('chalk');
  * @param {string} componentName - The name of the newly created component
  * @param {string} category - The category of the component
  * @param {boolean} registryUpdated - Whether the registry was successfully updated
+ * @param {string[]} dependencies - Array of detected dependencies (optional)
  */
-function showPostCreateAnnouncement(componentName, category, registryUpdated = true) {
+function showPostCreateAnnouncement(componentName, category, registryUpdated = true, dependencies = []) {
   console.log('\n' + chalk.bold.green('='.repeat(50)));
   console.log(chalk.bold.green('🎉 COMPONENT CREATED SUCCESSFULLY 🎉'));
   console.log(chalk.bold.green('='.repeat(50)) + '\n');
@@ -22,6 +23,15 @@ function showPostCreateAnnouncement(componentName, category, registryUpdated = t
   if (registryUpdated) {
     console.log(chalk.green('✅ Component registry has been automatically updated!'));
     console.log(chalk.white('   No manual registry updates needed.\n'));
+    
+    if (dependencies && dependencies.length > 0) {
+      console.log(chalk.blue('📊 Dependency Analysis:'));
+      console.log(chalk.white(`   Detected ${dependencies.length} dependencies:`));
+      dependencies.forEach(dep => {
+        console.log(chalk.white(`   - ${chalk.cyan(dep)}`));
+      });
+      console.log(chalk.white('   Dependencies have been automatically added to the registry.\n'));
+    }
   } else {
     console.log(chalk.yellow('⚠️ Automated registry update failed.'));
     console.log(chalk.white('   Please update the registry manually or run:'));

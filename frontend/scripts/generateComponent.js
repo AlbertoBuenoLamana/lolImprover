@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const { generateComponentTemplate } = require('./utils/ComponentDocumentationGenerator');
-const { updateComponentRegistry, componentExists } = require('./utils/updateComponentRegistry');
+const { updateComponentRegistry, componentExists, detectComponentDependencies } = require('./utils/updateComponentRegistry');
 const { showPostCreateAnnouncement } = require('./utils/postCreateAnnouncement');
 const chalk = require('chalk');
 
@@ -105,12 +105,16 @@ const relativeComponentPath = path.relative(
   componentFilePath
 ).replace(/\\/g, '/'); // Convert Windows backslashes to forward slashes
 
-// Update the component registry
+// Detect dependencies first, so we can pass them to the announcement
+const dependencies = detectComponentDependencies(componentFilePath);
+
+// Update the component registry with automatic dependency detection
 const registryUpdated = updateComponentRegistry(
   componentName,
   relativeComponentPath,
   description,
-  category
+  category,
+  true // Enable automatic dependency detection
 );
 
 console.log(chalk.green(`Component ${componentName} created at ${componentFilePath}`));
@@ -121,5 +125,5 @@ if (registryUpdated) {
   console.log(chalk.yellow('Warning: Failed to update component registry.'));
 }
 
-// Show post-creation announcement
-showPostCreateAnnouncement(componentName, category, registryUpdated); 
+// Show post-creation announcement with dependencies
+showPostCreateAnnouncement(componentName, category, registryUpdated, dependencies); 

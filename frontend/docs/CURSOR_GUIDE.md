@@ -34,22 +34,39 @@ When you need to create a new component in Cursor:
 The component creation script automatically:
 
 1. Creates the component file with proper structure and documentation
-2. Updates the TypeScript component registry (`src/utils/ComponentRegistry.ts`)
-3. Updates the JavaScript component registry (`scripts/utils/ComponentRegistry.js`)
+2. Performs intelligent dependency analysis of the component code
+3. Updates the TypeScript component registry with detected dependencies
+4. Updates the JavaScript component registry
+5. Maintains bidirectional dependency tracking (dependencies and usedBy fields)
+
+This intelligent automation ensures that:
+- Component registry is always up-to-date
+- Dependencies between components are accurately tracked
+- No manual steps are required to maintain the component dependency graph
+- Cursor IDE always has access to the latest component information
 
 To test the registry update functionality:
 ```
 npm run component:test-registry
 ```
 
-This automation ensures that:
-- Component registry is always up-to-date
-- No manual steps are required to keep track of components
-- Cursor IDE always has access to the latest component information
+### Dependency Tracking
 
-### Finding Components
+The automated system maintains accurate dependency relationships by:
 
-When looking for an existing component:
+1. Detecting which components your new component depends on by analyzing:
+   - Import statements
+   - JSX usage
+   
+2. Automatically updating the `dependencies` array of your new component
+
+3. Automatically updating the `usedBy` array of all components that your component uses
+
+This bidirectional tracking helps to:
+- Visualize the component dependency graph
+- Identify potential refactoring opportunities
+- Understand the impact of changes to a component
+- Prevent breaking changes when modifying shared components
 
 1. Check the component documentation:
    ```

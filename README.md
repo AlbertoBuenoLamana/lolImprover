@@ -117,6 +117,14 @@ npm run component:test-registry
 
 Tests the automated registry update functionality.
 
+### Generate Dependency Graph
+
+```
+npm run component:dependency-graph
+```
+
+Generates a visual dependency graph of all components showing their relationships. The graph is created using Mermaid syntax and saved to `frontend/docs/COMPONENT_DEPENDENCIES.md`.
+
 For more details, see [Component System Documentation](frontend/docs/COMPONENT_SYSTEM.md).
 
 ## Cursor IDE Integration

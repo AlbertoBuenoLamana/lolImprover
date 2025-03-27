@@ -78,7 +78,8 @@
     "create_component": "cd frontend && npm run component:create {name} \"{description}\" {category}",
     "audit_components": "cd frontend && npm run component:audit",
     "generate_docs": "cd frontend && npm run docs:generate",
-    "test_registry_update": "cd frontend && npm run component:test-registry"
+    "test_registry_update": "cd frontend && npm run component:test-registry",
+    "generate_dependency_graph": "cd frontend && npm run component:dependency-graph"
   },
   "documentation": {
     "component_system": "frontend/docs/COMPONENT_SYSTEM.md",

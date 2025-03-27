@@ -81,10 +81,23 @@ src/
 When you create a new component using the component creation script, it automatically:
 
 1. Creates the component file with proper structure and documentation
-2. Updates the TypeScript component registry (`src/utils/ComponentRegistry.ts`)
-3. Updates the JavaScript component registry for scripts (`scripts/utils/ComponentRegistry.js`)
+2. Analyzes the component to detect dependencies on other registered components
+3. Updates the TypeScript component registry (`src/utils/ComponentRegistry.ts`) with:
+   - Component metadata
+   - Automatically detected dependencies
+   - Empty usedBy array (to be populated by other components)
+4. Updates the JavaScript component registry for scripts (`scripts/utils/ComponentRegistry.js`)
+5. Updates the `usedBy` field in all components that this component depends on
 
-This automation ensures that the registry is always up-to-date and reduces the chance of manual errors.
+This automation ensures that:
+- The registry is always up-to-date
+- Component dependencies are accurately tracked
+- The component dependency graph is maintained automatically
+- No manual registry updates are needed in most cases
+
+The dependency detection analyzes:
+- Import statements for registered components
+- JSX usage of registered components
 
 If for some reason the automated update fails, the script will provide you with the entry to manually add to the registry.
 

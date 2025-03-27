@@ -1,33 +1,26 @@
-# Component Dependencies
+# Component Dependency Graph
 
-This graph shows the dependencies between components in the application.
+This document provides a visual representation of component dependencies in the application.
+
+## Full Dependency Graph
 
 ```mermaid
-graph TD
-  Layout["Layout"]
-  Header["Header"]
-  Sidebar["Sidebar"]
-  Footer["Footer"]
-  ProtectedRoute["ProtectedRoute"]
-  VideoCard["VideoCard"]
-  HomePage["HomePage"]
-  LoginPage["LoginPage"]
-  RegisterPage["RegisterPage"]
-  ProfilePage["ProfilePage"]
-  NotFoundPage["NotFoundPage"]
-  VideoTutorialsPage["VideoTutorialsPage"]
-  VideoPlayerPage["VideoPlayerPage"]
-  VideoFormPage["VideoFormPage"]
-  VideosPage["VideosPage"]
-  CreatorsPage["CreatorsPage"]
-  VideoDetailPage["VideoDetailPage"]
-  VideoStatisticsPage["VideoStatisticsPage"]
-  GameSessionsPage["GameSessionsPage"]
-  GameSessionFormPage["GameSessionFormPage"]
-  AdminDashboard["AdminDashboard"]
-  Layout --> Header
-  Layout --> Sidebar
-  Layout --> Footer
-  VideoTutorialsPage --> VideoCard
-
+flowchart TD
+  classDef ui fill:#f9f,stroke:#333,stroke-width:2px;
+  classDef layout fill:#bbf,stroke:#333,stroke-width:2px;
+  classDef feature fill:#bfb,stroke:#333,stroke-width:2px;
+  classDef page fill:#fbb,stroke:#333,stroke-width:2px;
+  classDef auth fill:#fbf,stroke:#333,stroke-width:2px;
+  classDef form fill:#bff,stroke:#333,stroke-width:2px;
+  classDef util fill:#ffb,stroke:#333,stroke-width:2px;
 ```
+
+## Legend
+
+- **UI Components** - Pink
+- **Layout Components** - Blue
+- **Feature Components** - Green
+- **Page Components** - Red
+- **Auth Components** - Purple
+- **Form Components** - Cyan
+- **Util Components** - Yellow

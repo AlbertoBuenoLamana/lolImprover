@@ -36,7 +36,8 @@
     "component:create": "node scripts/generateComponent.js",
     "component:audit": "node scripts/auditComponents.js",
     "component:setup": "node scripts/ensureDirs.js && npm run docs:generate",
-    "component:test-registry": "node scripts/testRegistryUpdate.js"
+    "component:test-registry": "node scripts/testRegistryUpdate.js",
+    "component:dependency-graph": "node scripts/generateDependencyGraph.js"
   },
   "eslintConfig": {
     "extends": [
