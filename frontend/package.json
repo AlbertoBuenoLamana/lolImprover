@@ -31,7 +31,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "docs:generate": "node scripts/generateComponentDocs.js",
+    "component:create": "node scripts/generateComponent.js",
+    "component:audit": "node scripts/auditComponents.js",
+    "component:setup": "node scripts/ensureDirs.js && npm run docs:generate",
+    "component:test-registry": "node scripts/testRegistryUpdate.js"
   },
   "eslintConfig": {
     "extends": [
@@ -53,6 +58,7 @@
   },
   "proxy": "http://localhost:8000",
   "devDependencies": {
+    "chalk": "^4.1.2",
     "typescript": "^5.8.2"
   }
 }

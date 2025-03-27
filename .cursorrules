@@ -1,0 +1,90 @@
+{
+  "component_system": {
+    "registry_path": "frontend/src/utils/ComponentRegistry.ts",
+    "js_registry_path": "frontend/scripts/utils/ComponentRegistry.js",
+    "documentation_path": "frontend/docs/COMPONENT_SYSTEM.md",
+    "components_doc_path": "frontend/docs/COMPONENTS.md",
+    "audit_command": "cd frontend && npm run component:audit",
+    "create_command": "cd frontend && npm run component:create",
+    "docs_command": "cd frontend && npm run docs:generate"
+  },
+  "component_categories": [
+    "layout",
+    "ui",
+    "page",
+    "feature",
+    "auth",
+    "form",
+    "util"
+  ],
+  "component_paths": {
+    "layout": "frontend/src/components/Layout",
+    "ui": "frontend/src/components/Ui",
+    "feature": "frontend/src/components/Feature",
+    "auth": "frontend/src/components/Auth",
+    "form": "frontend/src/components/Form",
+    "util": "frontend/src/components/Util",
+    "page": "frontend/src/pages"
+  },
+  "video_components": {
+    "path": "frontend/src/pages/Videos",
+    "components": [
+      "VideoTutorialsPage",
+      "VideoPlayerPage",
+      "VideoFormPage",
+      "VideosPage",
+      "CreatorsPage",
+      "VideoDetailPage",
+      "VideoStatisticsPage"
+    ]
+  },
+  "registry_automation": {
+    "enabled": true,
+    "update_util_path": "frontend/scripts/utils/updateComponentRegistry.js",
+    "test_command": "cd frontend && npm run component:test-registry",
+    "auto_update_on_create": true,
+    "announce_tool_path": "frontend/scripts/utils/postCreateAnnouncement.js",
+    "verification_on_create": true
+  },
+  "rules": [
+    {
+      "name": "check_component_exists",
+      "description": "Before creating a new component, check if it already exists in the registry",
+      "command": "node frontend/scripts/utils/checkComponentExists.js {componentName}"
+    },
+    {
+      "name": "follow_component_naming",
+      "description": "Use PascalCase for component names and match file names to component names",
+      "pattern": "^[A-Z][a-zA-Z0-9]*(Page|Component)?$"
+    },
+    {
+      "name": "use_component_template",
+      "description": "Use the component creation script to create new components",
+      "command": "npm run component:create {componentName} \"{description}\" {category}"
+    },
+    {
+      "name": "document_component_dependencies",
+      "description": "Document component dependencies in the component registry",
+      "reference": "frontend/docs/COMPONENT_SYSTEM.md"
+    }
+  ],
+  "naming_conventions": {
+    "component": "PascalCase",
+    "component_file": "PascalCase.tsx",
+    "props_interface": "{ComponentName}Props"
+  },
+  "commands": {
+    "setup": "cd frontend && npm run component:setup",
+    "create_component": "cd frontend && npm run component:create {name} \"{description}\" {category}",
+    "audit_components": "cd frontend && npm run component:audit",
+    "generate_docs": "cd frontend && npm run docs:generate",
+    "test_registry_update": "cd frontend && npm run component:test-registry"
+  },
+  "documentation": {
+    "component_system": "frontend/docs/COMPONENT_SYSTEM.md",
+    "components": "frontend/docs/COMPONENTS.md",
+    "component_dependencies": "frontend/docs/COMPONENT_DEPENDENCIES.md",
+    "component_usage": "frontend/docs/COMPONENT_USAGE_GUIDE.md",
+    "cursor_guide": "frontend/docs/CURSOR_GUIDE.md"
+  }
+}

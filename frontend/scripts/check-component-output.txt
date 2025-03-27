@@ -1,0 +1,24 @@
+=== CHECK COMPONENT EXISTS ===
+
+Checking for component: "Video"
+Found 21 total components in registry
+Found 7 similar components
+Exact match found: false
+
+Component "Video" not found, but similar components exist:
+- VideoCard (ui): Card displaying video information
+  Path: components/Ui/VideoCard.tsx
+- VideoTutorialsPage (page): Page displaying video tutorials with search and filter functionality
+  Path: pages/Videos/VideoTutorialsPage.tsx
+- VideoPlayerPage (page): Video player page with notes and progress tracking
+  Path: pages/Videos/VideoPlayerPage.tsx
+- VideoFormPage (page): Form for creating or editing video tutorials
+  Path: pages/Videos/VideoFormPage.tsx
+- VideosPage (page): General videos listing page
+  Path: pages/Videos/VideosPage.tsx
+- VideoDetailPage (page): Detailed view of a video
+  Path: pages/Videos/VideoDetailPage.tsx
+- VideoStatisticsPage (page): Page displaying video statistics
+  Path: pages/Videos/VideoStatisticsPage.tsx
+
+=== CHECK COMPONENT COMPLETE ===

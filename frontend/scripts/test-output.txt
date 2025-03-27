@@ -1,0 +1,5 @@
+
+=== SIMPLE TEST OUTPUT ===
+Hello, world!
+Test complete at 2025-03-27T06:38:35.735Z
+=== END OF TEST ===

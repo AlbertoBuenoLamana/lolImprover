@@ -1,0 +1,46 @@
+=== COMPONENT REGISTRY TEST RESULTS ===
+
+Total components: 21
+
+Testing findComponentByName("VideoCard"):
+- Name: VideoCard
+- Path: components/Ui/VideoCard.tsx
+- Description: Card displaying video information
+- Category: ui
+
+Testing findComponentsByCategory("ui"):
+Found 1 UI components:
+- VideoCard: Card displaying video information
+
+All components by category:
+
+Layout components (4):
+- Layout
+- Header
+- Sidebar
+- Footer
+
+Auth components (1):
+- ProtectedRoute
+
+Ui components (1):
+- VideoCard
+
+Page components (15):
+- HomePage
+- LoginPage
+- RegisterPage
+- ProfilePage
+- NotFoundPage
+- VideoTutorialsPage
+- VideoPlayerPage
+- VideoFormPage
+- VideosPage
+- CreatorsPage
+- VideoDetailPage
+- VideoStatisticsPage
+- GameSessionsPage
+- GameSessionFormPage
+- AdminDashboard
+
+=== TEST COMPLETE ===
