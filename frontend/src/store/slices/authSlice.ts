@@ -128,16 +128,21 @@ export const getCurrentUser = createAsyncThunk(
       const { auth } = getState() as { auth: AuthState };
       
       if (!auth.token) {
+        console.warn('getCurrentUser: No token found in state');
         return rejectWithValue('No token found');
       }
       
-      // Use the axios instance which already handles the auth token
+      console.log('getCurrentUser: Making API request to /users/me');
       const response = await axios.get('/users/me');
+      console.log('getCurrentUser: Received response:', response.data);
       
       return response.data;
     } catch (error: any) {
+      console.error('getCurrentUser failed:', error.response?.status, error.message);
+      
       // If token is invalid, clear it
       if (error.response?.status === 401) {
+        console.warn('getCurrentUser: Received 401, clearing token');
         localStorage.removeItem('token');
       }
       return rejectWithValue(extractErrorMessage(error));

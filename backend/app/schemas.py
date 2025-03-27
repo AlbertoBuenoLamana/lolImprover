@@ -22,6 +22,13 @@ class UserCreate(UserBase):
     is_admin: Optional[bool] = False  # Allow specifying admin status when creating users
 
 
+class UserUpdate(UserBase):
+    username: str
+    email: EmailStr
+    current_password: Optional[str] = None
+    new_password: Optional[str] = None
+
+
 class User(UserBase):
     id: int
     is_active: bool

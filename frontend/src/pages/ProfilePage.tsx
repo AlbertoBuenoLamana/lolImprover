@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
@@ -19,7 +19,7 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
-import { updateUserProfile } from '../store/slices/authSlice';
+import { updateUserProfile, getCurrentUser } from '../store/slices/authSlice';
 import { RootState, AppDispatch } from '../store';
 
 // Validation schema
@@ -71,9 +71,17 @@ function TabPanel(props: TabPanelProps) {
 
 const ProfilePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user, loading, error } = useSelector((state: RootState) => state.auth);
+  const { user, loading, error, token, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [tabValue, setTabValue] = useState(0);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+
+  // Load user data if needed
+  useEffect(() => {
+    if (token && !user && !loading) {
+      console.log('ProfilePage: Loading user data');
+      dispatch(getCurrentUser());
+    }
+  }, [dispatch, user, loading, token]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -99,10 +107,21 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  if (!user) {
+  // Show loading state
+  if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  // No user data available
+  if (!user) {
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4 }}>
+        <CircularProgress sx={{ mb: 2 }} />
+        <Typography>Loading profile data...</Typography>
       </Box>
     );
   }

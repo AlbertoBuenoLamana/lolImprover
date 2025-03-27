@@ -73,3 +73,45 @@ def list_users(
     """List all users (admin only)"""
     users = db.query(models.User).offset(skip).limit(limit).all()
     return users
+
+
+@router.put("/me", response_model=schemas.User)
+def update_user_profile(
+    user_update: schemas.UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_active_user)
+):
+    """Update the current user's profile"""
+    
+    # Check if username is being changed and if it's already taken
+    if user_update.username != current_user.username:
+        db_user = db.query(models.User).filter(models.User.username == user_update.username).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Check if email is being changed and if it's already registered
+    if user_update.email != current_user.email:
+        db_user = db.query(models.User).filter(models.User.email == user_update.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # If password change is requested, verify current password
+    if user_update.current_password:
+        if not auth.verify_password(user_update.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Set new password
+        if user_update.new_password:
+            current_user.hashed_password = auth.get_password_hash(user_update.new_password)
+    
+    # Update other fields
+    current_user.username = user_update.username
+    current_user.email = user_update.email
+    
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
