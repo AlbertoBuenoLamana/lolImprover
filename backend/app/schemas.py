@@ -153,6 +153,7 @@ class VideoTutorial(VideoTutorialBase):
 class VideoTutorialWithCategory(VideoTutorial):
     category: Optional[VideoCategory] = None
     creator_obj: Optional[Creator] = None  # Include creator info
+    progress_data: Optional[Dict[str, Any]] = None  # Include progress information if requested
 
     class Config:
         from_attributes = True

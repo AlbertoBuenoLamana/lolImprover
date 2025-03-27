@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Container,
@@ -33,6 +33,8 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  ButtonGroup,
+  Snackbar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -42,6 +44,11 @@ import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useNavigate } from 'react-router-dom';
 import { AppDispatch, RootState } from '../../store';
 import axios from '../../api/axios';
@@ -77,6 +84,10 @@ interface VideoTutorial {
     website?: string;
   };
   is_bookmarked?: boolean;
+  is_completed?: boolean;
+  is_watched?: boolean;
+  position_seconds?: number;
+  duration_seconds?: number;
 }
 
 interface KemonoImportResponse {
@@ -127,12 +138,17 @@ const VideoTutorialsPage: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string>('');
   const [showWatched, setShowWatched] = useState<boolean | null>(null);
   const [showBookmarked, setShowBookmarked] = useState<boolean | null>(null);
+  const [completionFilter, setCompletionFilter] = useState<'all' | 'completed' | 'unwatched'>('all');
   
   // State for creators
   const [creators, setCreators] = useState<any[]>([]);
   
   // Get token from auth state
   const token = useSelector((state: RootState) => state.auth.token);
+  
+  // Add new state for category update
+  const [updatingCategories, setUpdatingCategories] = useState(false);
+  const [updateCategoryResult, setUpdateCategoryResult] = useState<string | null>(null);
   
   // Fetch videos and categories on component mount
   useEffect(() => {
@@ -155,7 +171,7 @@ const VideoTutorialsPage: React.FC = () => {
       }
       
       // Request expanded response with creator objects
-      params.append('expand', 'creator');
+      params.append('expand', 'creator,progress');
       
       if (params.toString()) {
         url += `?${params.toString()}`;
@@ -165,7 +181,23 @@ const VideoTutorialsPage: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setVideos(response.data);
+      // Process the videos to extract progress information
+      const processedVideos = response.data.map((video: any) => {
+        // Extract progress fields if they exist
+        if (video.progress_data) {
+          return {
+            ...video,
+            is_completed: video.progress_data.is_completed || video.progress_data.is_watched,
+            is_watched: video.progress_data.is_watched,
+            position_seconds: video.progress_data.position_seconds || video.progress_data.watch_progress,
+            duration_seconds: video.progress_data.duration_seconds || video.duration_seconds,
+            is_bookmarked: video.progress_data.is_bookmarked
+          };
+        }
+        return video;
+      });
+      
+      setVideos(processedVideos);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch videos');
       console.error('Error fetching videos:', err);
@@ -370,7 +402,7 @@ const VideoTutorialsPage: React.FC = () => {
     params.append('sort_order', sortOrder);
     
     // Request expanded response with creator objects
-    params.append('expand', 'creator');
+    params.append('expand', 'creator,progress');
     
     if (params.toString()) {
       url += `?${params.toString()}`;
@@ -404,14 +436,59 @@ const VideoTutorialsPage: React.FC = () => {
     fetchVideos(selectedCategory === null || selectedCategory === 0 ? undefined : selectedCategory);
   };
 
-  // Simple client-side filtering for quick search results
-  const filteredVideos = videos.filter(video => 
-    searchTerm ? (
-      video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (video.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (video.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) || false)
-    ) : true
-  );
+  // Filter videos based on current filters
+  const filteredVideos = useMemo(() => {
+    let filtered = [...videos];
+    
+    // Apply search term filter
+    if (searchTerm) {
+      filtered = filtered.filter(video => 
+        video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        video.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        video.creator?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply creator filter
+    if (selectedCreator) {
+      filtered = filtered.filter(video => 
+        video.creator_relation_id?.toString() === selectedCreator
+      );
+    }
+    
+    // Apply tag filter
+    if (selectedTag) {
+      filtered = filtered.filter(video => 
+        video.tags?.includes(selectedTag)
+      );
+    }
+    
+    // Apply watched/bookmarked filters
+    if (showWatched !== null) {
+      filtered = filtered.filter(video => 
+        video.is_watched === showWatched
+      );
+    }
+    
+    if (showBookmarked !== null) {
+      filtered = filtered.filter(video => 
+        video.is_bookmarked === showBookmarked
+      );
+    }
+    
+    // Apply completion filter
+    if (completionFilter === 'completed') {
+      filtered = filtered.filter(video => 
+        video.is_completed || video.is_watched
+      );
+    } else if (completionFilter === 'unwatched') {
+      filtered = filtered.filter(video => 
+        !(video.is_completed || video.is_watched)
+      );
+    }
+    
+    return filtered;
+  }, [videos, searchTerm, selectedCreator, selectedTag, showWatched, showBookmarked, completionFilter]);
 
   // Add a function to toggle bookmark status
   const toggleBookmark = async (videoId: number, isBookmarked: boolean) => {
@@ -431,6 +508,33 @@ const VideoTutorialsPage: React.FC = () => {
       console.error('Error toggling bookmark:', err);
       setError('Failed to update bookmark status');
     }
+  };
+
+  // Add function to update video categories
+  const updateVideoCategories = async () => {
+    try {
+      setUpdatingCategories(true);
+      setError(null);
+      
+      const response = await axios.post('/videos/update-categories', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setUpdateCategoryResult(`Successfully updated categories for ${response.data.updated_videos} of ${response.data.total_videos} videos.`);
+      
+      // Refresh videos to show the updated categories
+      fetchVideos(selectedCategory === null || selectedCategory === 0 ? undefined : selectedCategory);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update video categories');
+      console.error('Error updating video categories:', err);
+    } finally {
+      setUpdatingCategories(false);
+    }
+  };
+
+  // Add function to close the update result notification
+  const handleCloseUpdateResult = () => {
+    setUpdateCategoryResult(null);
   };
 
   return (
@@ -482,18 +586,29 @@ const VideoTutorialsPage: React.FC = () => {
               <Tab key={category.id} label={category.name} value={category.id} />
             ))}
             
-            {/* Add setup button at the end */}
-            <Tab 
-              label="Setup Categories" 
-              value={null}
-              icon={<AddIcon />} 
-              iconPosition="end"
-              onClick={(e) => {
-                e.stopPropagation();
-                createDefaultCategories();
-              }}
-              sx={{ marginLeft: 'auto' }}
-            />
+            {/* Modify this section to include the update categories button */}
+            <Box sx={{ marginLeft: 'auto', display: 'flex' }}>
+              <Button 
+                size="small"
+                color="secondary"
+                onClick={updateVideoCategories}
+                disabled={updatingCategories}
+                startIcon={updatingCategories ? <CircularProgress size={16} /> : null}
+                sx={{ mr: 1 }}
+              >
+                Update Categories
+              </Button>
+              <Tab 
+                label="Setup Categories" 
+                value={null}
+                icon={<AddIcon />} 
+                iconPosition="end"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  createDefaultCategories();
+                }}
+              />
+            </Box>
           </Tabs>
         </Paper>
         
@@ -513,9 +628,44 @@ const VideoTutorialsPage: React.FC = () => {
               ),
             }}
           />
+          
+          {/* Completion filter buttons */}
+          <ButtonGroup size="small">
+            <Tooltip title="All Videos">
+              <Button 
+                onClick={() => setCompletionFilter('all')}
+                color={completionFilter === 'all' ? 'primary' : 'inherit'}
+                variant={completionFilter === 'all' ? 'contained' : 'outlined'}
+                startIcon={<ViewListIcon />}
+              >
+                All
+              </Button>
+            </Tooltip>
+            <Tooltip title="Completed Videos">
+              <Button 
+                onClick={() => setCompletionFilter('completed')}
+                color={completionFilter === 'completed' ? 'success' : 'inherit'}
+                variant={completionFilter === 'completed' ? 'contained' : 'outlined'}
+                startIcon={<CheckCircleIcon />}
+              >
+                Completed
+              </Button>
+            </Tooltip>
+            <Tooltip title="Unwatched Videos">
+              <Button 
+                onClick={() => setCompletionFilter('unwatched')}
+                color={completionFilter === 'unwatched' ? 'primary' : 'inherit'}
+                variant={completionFilter === 'unwatched' ? 'contained' : 'outlined'}
+                startIcon={<VisibilityOffIcon />}
+              >
+                Unwatched
+              </Button>
+            </Tooltip>
+          </ButtonGroup>
+          
           <Button 
             variant="outlined" 
-            startIcon={<FilterListIcon />} 
+            startIcon={<FilterAltIcon />} 
             onClick={handleToggleFilters}
             size="medium"
           >
@@ -624,8 +774,38 @@ const VideoTutorialsPage: React.FC = () => {
         ) : videos.length === 0 ? (
           <Paper sx={{ p: 3, textAlign: 'center' }}>
             <Typography variant="body1" color="text.secondary">
-              No videos found. Add videos or import from Kemono.
+              {selectedCategory ? 
+                `No videos found in this category. Try selecting a different category or importing more videos.` :
+                `No videos found. Add videos or import from Kemono.`
+              }
             </Typography>
+            {selectedCategory && (
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  setSelectedCategory(0);
+                  fetchVideos();
+                }}
+                sx={{ mt: 2 }}
+              >
+                View All Videos
+              </Button>
+            )}
+          </Paper>
+        ) : filteredVideos.length === 0 ? (
+          <Paper sx={{ p: 3, textAlign: 'center' }}>
+            <Typography variant="body1" color="text.secondary">
+              No videos match your current filters. Try adjusting your search or filter criteria.
+            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={resetFilters}
+              sx={{ mt: 2 }}
+            >
+              Reset Filters
+            </Button>
           </Paper>
         ) : (
           <Grid container spacing={3}>
@@ -670,6 +850,27 @@ const VideoTutorialsPage: React.FC = () => {
                       </IconButton>
                     </Box>
                     
+                    {/* Video status indicators positioned at corners */}
+                    <Box sx={{ position: 'absolute', top: 8, left: 8 }}>
+                      {(video.is_completed || video.is_watched) && (
+                        <Chip
+                          icon={<CheckCircleIcon />}
+                          label="Completed"
+                          color="success"
+                          size="small"
+                          sx={{ bgcolor: alpha('#000', 0.7), mb: 1 }}
+                        />
+                      )}
+                      {video.position_seconds && video.duration_seconds && !video.is_completed && !video.is_watched && (
+                        <Chip
+                          label={`${Math.round((video.position_seconds / video.duration_seconds) * 100)}%`}
+                          color="primary"
+                          size="small"
+                          sx={{ bgcolor: alpha('#000', 0.7), mb: 1 }}
+                        />
+                      )}
+                    </Box>
+                    
                     {video.category && (
                       <Chip
                         label={video.category.name}
@@ -686,11 +887,21 @@ const VideoTutorialsPage: React.FC = () => {
                   </CardMedia>
                   
                   <CardContent sx={{ flexGrow: 1 }}>
-                    <Tooltip title={video.title}>
-                      <Typography variant="h6" gutterBottom component="div" noWrap>
-                        {video.title}
-                      </Typography>
-                    </Tooltip>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                      <Tooltip title={video.title}>
+                        <Typography variant="h6" gutterBottom component="div" noWrap sx={{ flexGrow: 1 }}>
+                          {video.title}
+                        </Typography>
+                      </Tooltip>
+                      
+                      {video.is_bookmarked && (
+                        <BookmarkIcon color="primary" fontSize="small" sx={{ ml: 1 }} />
+                      )}
+                      
+                      {(video.is_completed || video.is_watched) && (
+                        <CheckCircleIcon color="success" fontSize="small" sx={{ ml: 1 }} />
+                      )}
+                    </Box>
                     
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       {video.creator || 'Unknown Creator'}
@@ -886,6 +1097,19 @@ const VideoTutorialsPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Add notification for category update result */}
+      <Snackbar
+        open={updateCategoryResult !== null}
+        autoHideDuration={6000}
+        onClose={handleCloseUpdateResult}
+        message={updateCategoryResult}
+        action={
+          <Button color="secondary" size="small" onClick={handleCloseUpdateResult}>
+            Close
+          </Button>
+        }
+      />
     </Container>
   );
 };

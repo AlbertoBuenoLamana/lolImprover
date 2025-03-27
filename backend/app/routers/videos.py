@@ -249,11 +249,13 @@ def read_videos(
     - **sort_order**: 'asc' or 'desc'
     - **title**: Filter by title (partial match)
     - **tag**: Filter by tag
-    - **creator_name**: Filter by creator name
+    - **creator**: Filter by creator name (legacy field)
+    - **creator_name**: Filter by creator name (using creator_obj relationship)
+    - **expand**: Comma-separated list of related data to include ('creator', 'progress')
     """
     query = db.query(models.VideoTutorial)
     
-    # Apply filters if provided
+    # Apply filters
     if creator:
         query = query.filter(models.VideoTutorial.creator == creator)
     
@@ -261,36 +263,32 @@ def read_videos(
         query = query.filter(models.VideoTutorial.category_id == category_id)
     
     if title:
-        query = query.filter(models.VideoTutorial.title.ilike(f"%{title}%"))
+        query = query.filter(models.VideoTutorial.title.ilike(f'%{title}%'))
     
     if tag:
-        # For PostgreSQL JSON array contains
         query = query.filter(models.VideoTutorial.tags.contains([tag]))
     
     if creator_name:
-        query = query.join(models.Creator).filter(models.Creator.name.ilike(f"%{creator_name}%"))
+        query = query.join(models.Creator).filter(models.Creator.name.ilike(f'%{creator_name}%'))
     
-    # Apply eager loading if requested
-    if expand and 'creator' in expand:
+    # Join with category and creator if needed
+    expand_options = expand.split(',') if expand else []
+    
+    if 'creator' in expand_options or not expand:
         query = query.options(joinedload(models.VideoTutorial.creator_obj))
-    
-    # Special case: sort by last_watched from video_progress
-    if sort_by == "last_watched":
-        # Join with video_progress and filter by current user
-        query = query.join(
-            models.VideoProgress, 
-            (models.VideoTutorial.id == models.VideoProgress.video_id) & 
-            (models.VideoProgress.user_id == current_user.id)
-        )
         
-        # Apply sorting
-        if sort_order.lower() == "asc":
-            query = query.order_by(models.VideoProgress.last_watched.asc())
-        else:
-            query = query.order_by(models.VideoProgress.last_watched.desc())
-    else:
-        # Standard sorting on VideoTutorial fields
-        sort_field = getattr(models.VideoTutorial, sort_by, models.VideoTutorial.published_date)
+    if 'category' in expand_options or not expand:
+        query = query.options(joinedload(models.VideoTutorial.category))
+    
+    # Apply sorting
+    if sort_by:
+        sort_field = None
+        if sort_by == "title":
+            sort_field = models.VideoTutorial.title
+        elif sort_by == "creator":
+            sort_field = models.VideoTutorial.creator
+        elif sort_by == "published_date":
+            sort_field = models.VideoTutorial.published_date
         
         if sort_order.lower() == "asc":
             query = query.order_by(sort_field.asc())
@@ -298,6 +296,42 @@ def read_videos(
             query = query.order_by(sort_field.desc())
     
     videos = query.offset(skip).limit(limit).all()
+    
+    # If progress information is requested, fetch and attach it
+    if 'progress' in expand_options:
+        # Get all video IDs
+        video_ids = [video.id for video in videos]
+        
+        # Fetch progress for these videos for the current user
+        progress_records = db.query(models.VideoProgress).filter(
+            models.VideoProgress.video_id.in_(video_ids),
+            models.VideoProgress.user_id == current_user.id
+        ).all()
+        
+        # Create a mapping from video_id to progress
+        progress_map = {p.video_id: p for p in progress_records}
+        
+        # Attach progress to each video
+        for video in videos:
+            progress = progress_map.get(video.id)
+            if progress:
+                # Create a dictionary with both backend and frontend field names
+                progress_dict = {
+                    "id": progress.id,
+                    "last_watched": progress.last_watched,
+                    "user_id": progress.user_id,
+                    "video_id": progress.video_id,
+                    "is_watched": progress.is_watched,
+                    "watch_progress": progress.watch_progress,
+                    "personal_notes": progress.personal_notes,
+                    "is_bookmarked": progress.is_bookmarked,
+                    # Frontend compatibility fields
+                    "notes": progress.personal_notes,
+                    "position_seconds": progress.watch_progress,
+                    "is_completed": progress.is_watched
+                }
+                # Use a different attribute name to avoid conflict with the relationship
+                setattr(video, "progress_data", progress_dict)
     
     return videos
 
@@ -807,3 +841,121 @@ def search_videos(
     videos = query.offset(skip).limit(limit).all()
     
     return videos
+
+
+@router.post("/update-categories", status_code=status.HTTP_200_OK)
+def update_video_categories(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_admin_user)
+):
+    """Update categories for all videos based on their titles (admin only)"""
+    # Define title lists for each category
+    fundamental_titles = [
+        "Snowball fundamentals",
+        "Carrying 3 losing lanes Fundamentals",
+        "Fundamentals to climb and how to play early",
+        "Key Fundamentals explained to 1v9",
+        "The Correct way to play for wincondition",
+        "How to COUNTER all invades",
+        "How to SMASH people in D1 elo",
+        "Conditions for a gank to succeed"
+    ]
+    
+    early_course_titles = [
+        "How to get good on Any champion",
+        "Early game 1v9 course",
+        "W-W CONCEPT",
+        "BASE TIMERS",
+        "GANK EXECUTION",
+        "WHEN TO FARM WHEN TO GANK",
+        "ADVANCED JUNGLE TRACKING",
+        "DEEP WAVES UNDERSTANDING",
+        "INVADE LIKE A KING",
+        "Understanding pathing options & Winconditions",
+        "CHAMPION IDENTITY",
+        "DRAFT"
+    ]
+    
+    midgame_course_titles = [
+        "Baron conditions",
+        "Midgame course",
+        "Tempo",
+        "Baron usage",
+        "How to play for baron",
+        "Recognise the objective",
+        "Pingpong",
+        "WHW Concept",
+        "Drake windows"
+    ]
+    
+    classes_titles = [
+        "class",
+        "Ganking & Playing for wincon class",
+        "Drakes & How to snowball",
+        "Tempo class"
+    ]
+    
+    practical_course_titles = [
+        "Practical course",
+        "wincondition & Planning",
+        "WW Concept",
+        "Rehearsal of the practical courses",
+        "BEST way to GANK",
+        "When to farm when to gank",
+        "Perfect Jungle Tracking",
+        "Waves understanding",
+        "Art of Invading",
+        "Camera control & Jungle tracking",
+        "How to play mechanically well"
+    ]
+    
+    # Get category IDs
+    fundamentals_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Fundamentals").first()
+    early_game_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Early Game Course").first()
+    midgame_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Midgame Course").first()
+    classes_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Classes").first()
+    practical_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Practical Course").first()
+    
+    # Get all videos without categories
+    videos = db.query(models.VideoTutorial).filter(
+        models.VideoTutorial.category_id.is_(None)
+    ).all()
+    
+    updated_count = 0
+    
+    # Update videos based on title matches
+    for video in videos:
+        title = video.title.lower()
+        updated = False
+        
+        # Check fundamentals
+        if fundamentals_category and any(pattern.lower() in title for pattern in fundamental_titles):
+            video.category_id = fundamentals_category.id
+            updated = True
+        # Check early game course
+        elif early_game_category and any(pattern.lower() in title for pattern in early_course_titles):
+            video.category_id = early_game_category.id
+            updated = True
+        # Check midgame course
+        elif midgame_category and any(pattern.lower() in title for pattern in midgame_course_titles):
+            video.category_id = midgame_category.id
+            updated = True
+        # Check classes
+        elif classes_category and any(pattern.lower() in title for pattern in classes_titles):
+            video.category_id = classes_category.id
+            updated = True
+        # Check practical course
+        elif practical_category and any(pattern.lower() in title for pattern in practical_course_titles):
+            video.category_id = practical_category.id
+            updated = True
+        
+        if updated:
+            updated_count += 1
+    
+    db.commit()
+    
+    return {
+        "message": f"Updated categories for {updated_count} videos",
+        "total_videos": len(videos),
+        "updated_videos": updated_count
+    }

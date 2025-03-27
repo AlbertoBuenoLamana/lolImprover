@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -27,6 +27,9 @@ import {
   Select,
   FormControl,
   SelectChangeEvent,
+  Badge,
+  Tooltip,
+  Snackbar,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
@@ -39,6 +42,8 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import FlagIcon from '@mui/icons-material/Flag';
 import PersonIcon from '@mui/icons-material/Person';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import axios from '../../api/axios';
 import { RootState } from '../../store';
 import { fetchCreators, setVideoCreator } from '../../store/slices/creatorSlice';
@@ -645,6 +650,10 @@ const VideoPlayerPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [bookmarked, setBookmarked] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastOpen, setToastOpen] = useState(false);
   
   // Get auth token
   const token = useSelector((state: RootState) => state.auth.token);
@@ -690,6 +699,8 @@ const VideoPlayerPage: React.FC = () => {
           setVideoProgress(progressResponse.data);
           setNotes(progressResponse.data.notes || '');
           setBookmarked(!!progressResponse.data.is_bookmarked);
+          setCompleted(!!progressResponse.data.is_completed || !!progressResponse.data.is_watched);
+          setIsCompleted(progressResponse.data.is_completed);
         } catch (err) {
           // It's okay if there's no progress yet
           console.log('No existing progress found');
@@ -1018,6 +1029,112 @@ const VideoPlayerPage: React.FC = () => {
     }
   };
   
+  // Add a new function to toggle completed status
+  const toggleCompleted = async () => {
+    if (!videoId) {
+      console.error('Cannot toggle completed status: Video ID is missing');
+      return;
+    }
+    
+    const newCompletedStatus = !completed;
+    setCompleted(newCompletedStatus);
+    
+    try {
+      const positionSeconds = videoProgress?.position_seconds || 0;
+      
+      const payload = {
+        position_seconds: positionSeconds,
+        notes: notes,
+        is_bookmarked: bookmarked,
+        is_completed: newCompletedStatus
+      };
+      
+      console.log('Toggling completed status with payload:', payload);
+      
+      const response = await axios.post(`/videos/${videoId}/progress`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Completed status toggle response:', response.data);
+      
+      // Update local progress
+      setVideoProgress(prev => prev ? {
+        ...prev,
+        is_completed: newCompletedStatus,
+        is_watched: newCompletedStatus
+      } : {
+        // Create a minimal progress object if none exists
+        id: response.data.id,
+        video_id: Number(videoId),
+        user_id: response.data.user_id,
+        position_seconds: positionSeconds,
+        notes: notes,
+        is_bookmarked: bookmarked,
+        is_completed: newCompletedStatus,
+        is_watched: newCompletedStatus,
+        last_watched: new Date().toISOString(),
+        duration_seconds: 0,
+        watch_progress: positionSeconds,
+        personal_notes: notes
+      });
+      
+      setSaveStatus('saved');
+      
+      // Show toast notification
+      setToastMessage(`Video marked as ${newCompletedStatus ? 'completed' : 'unwatched'}`);
+      setToastOpen(true);
+      
+      // Reset save status after 2 seconds
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    } catch (error: any) {
+      console.error('Error toggling completed status:', error);
+      
+      // More detailed error logging
+      if (error.response) {
+        console.error('Response error:', error.response.data);
+        console.error('Status code:', error.response.status);
+      } else if (error.request) {
+        console.error('Request was made but no response was received');
+      } else {
+        console.error('Error setting up request:', error.message);
+      }
+      
+      // Show error toast
+      setToastMessage('Failed to update completion status');
+      setToastOpen(true);
+      
+      // Revert UI state on error
+      setCompleted(!newCompletedStatus);
+      setSaveStatus('error');
+    }
+  };
+  
+  // Add a function to mark video as completed
+  const handleToggleCompletion = async () => {
+    try {
+      const response = await axios.post(`/videos/${videoId}/progress`, {
+        is_completed: !isCompleted
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setIsCompleted(!isCompleted);
+      
+      // Show success toast
+      setToastMessage(`Video marked as ${!isCompleted ? 'completed' : 'not completed'}`);
+      setToastOpen(true);
+    } catch (error) {
+      console.error('Error updating video completion status:', error);
+      setToastMessage('Failed to update completion status');
+      setToastOpen(true);
+    }
+  };
+  
   if (loading) {
     return (
       <Container maxWidth="lg">
@@ -1060,9 +1177,19 @@ const VideoPlayerPage: React.FC = () => {
           </Typography>
           
           <IconButton 
+            color={completed ? 'success' : 'default'}
+            onClick={toggleCompleted}
+            sx={{ mr: 1 }}
+            title={completed ? "Mark as incomplete" : "Mark as completed"}
+          >
+            {completed ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+          </IconButton>
+          
+          <IconButton 
             color={bookmarked ? 'primary' : 'default'}
             onClick={toggleBookmark}
             sx={{ mr: 1 }}
+            title={bookmarked ? "Remove bookmark" : "Bookmark this video"}
           >
             {bookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
           </IconButton>
@@ -1091,10 +1218,22 @@ const VideoPlayerPage: React.FC = () => {
           />
           
           {/* Keyboard Controls Help */}
-          <Box sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ mt: 1, p: 2, bgcolor: 'background.paper', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="caption" color="text.secondary">
               Keyboard controls: Use ← to rewind 5 seconds, → to forward 5 seconds
             </Typography>
+            
+            <Tooltip title={completed ? "Mark as unwatched" : "Mark as completed"}>
+              <Button 
+                color={completed ? "success" : "primary"}
+                variant={completed ? "contained" : "outlined"}
+                onClick={toggleCompleted}
+                startIcon={completed ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+                size="small"
+              >
+                {completed ? "Completed" : "Mark Complete"}
+              </Button>
+            </Tooltip>
           </Box>
         </Paper>
         
@@ -1328,6 +1467,14 @@ const VideoPlayerPage: React.FC = () => {
           </Grid>
         </Grid>
       </Box>
+      
+      {/* Add Snackbar for notifications */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={4000}
+        onClose={() => setToastOpen(false)}
+        message={toastMessage}
+      />
     </Container>
   );
 };

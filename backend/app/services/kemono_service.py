@@ -190,6 +190,97 @@ class KemonoService:
         skipped_count = 0
         imported_videos = []
         
+        # Define comprehensive title lists for automatic categorization
+        fundamental_titles = [
+            "Snowball fundamentals",
+            "Carrying 3 losing lanes Fundamentals",
+            "Fundamentals to climb and how to play early (all elo's)",
+            "Key Fundamentals explained to 1v9 every single game (very good vid)",
+            "The Correct way to play for wincondition (MUST WATCH VID)",
+            "How to COUNTER all invades.",
+            "How to SMASH people in D1 elo (step by step explaining)",
+            "Conditions for a gank to succeed"
+        ]
+        
+        early_course_titles = [
+            "How to get good on Any champion (champion mastery, RLY important video)",
+            "#11 Early game 1v9 course: W-W CONCEPT",
+            "#10 Early game 1v9 course: BASE TIMERS",
+            "#9 Early game 1v9 course: GANK EXECUTION",
+            "#8 Early game 1v9 course: WHEN TO FARM WHEN TO GANK.",
+            "#7 Early game 1v9 course: ADVANCED JUNGLE TRACKING",
+            "#6 Early game 1v9 course: DEEP WAVES UNDERSTANDING",
+            "#5 Early game 1v9 course: INVADE LIKE A KING",
+            "Understanding pathing options & Winconditions - Episode 3",
+            "#2 Early game 1v9 course: CHAMPION IDENTITY",
+            "#1 - Early Game 1v9 course: DRAFT"
+        ]
+        
+        midgame_course_titles = [
+            "Baron conditions presentation",
+            "Midgame course episode 7: Tempo",
+            "Midgame course episode 6: Baron usage",
+            "Midgame course episode 5: How to play for baron",
+            "Midgame course episode 4: Recognise the objective",
+            "Midgame course episode 3: Pingpong",
+            "Midgame course Lesson 2: WHW Concept (very important)",
+            "Midgame course Lesson 1: Drake windows and execution"
+        ]
+        
+        classes_titles = [
+            "Ganking & Playing for wincon class",
+            "Drakes & How to snowball",
+            "Tempo class"
+        ]
+        
+        practical_course_titles = [
+            "How to play for wincondition & Planning - Practical course - Episode 11",
+            "WW Concept - Practical course - Episode 10 (important)",
+            "BASE TIMERS  - Practical course - Episode 9",
+            "Practical course - Episode 8 - Rehearsal of the practical courses",
+            "BEST way to GANK - Practical course - Episode 7 (insane video)",
+            "When to farm when to gank - Practical course - Episode 6 (ganking jg version)",
+            "When to farm when to gank - Practical course - Episode 6",
+            "Perfect Jungle Tracking | Practical course - Episode 5",
+            "Waves understanding and how to push | Practical course - Episode 5",
+            "Art of Invading, 5 Level lead with these concepts | Practical course - Episode 4",
+            "Understanding pathing options & Winconditions - Episode 3",
+            "Camera control & Jungle tracking - Episode 2",
+            "How to play mechanically well and predict enemy spells | Practical course - Episode 1"
+        ]
+        
+        # Get category IDs from database if not provided
+        if not category_mapping:
+            category_mapping = {}
+            
+            # Try to find category IDs by name
+            fundamentals_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Fundamentals").first()
+            early_game_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Early Game Course").first()
+            midgame_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Midgame Course").first()
+            classes_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Classes").first()
+            practical_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Practical Course").first()
+            
+            # Create title-to-category mappings
+            if fundamentals_category:
+                for title in fundamental_titles:
+                    category_mapping[title.lower()] = fundamentals_category.id
+            
+            if early_game_category:
+                for title in early_course_titles:
+                    category_mapping[title.lower()] = early_game_category.id
+            
+            if midgame_category:
+                for title in midgame_course_titles:
+                    category_mapping[title.lower()] = midgame_category.id
+            
+            if classes_category:
+                for title in classes_titles:
+                    category_mapping[title.lower()] = classes_category.id
+            
+            if practical_category:
+                for title in practical_course_titles:
+                    category_mapping[title.lower()] = practical_category.id
+            
         for raw_video in raw_videos:
             # Process video data
             processed = KemonoService.process_video(raw_video)
@@ -209,15 +300,42 @@ class KemonoService:
                 skipped_count += 1
                 continue
             
-            # Determine category_id based on title if mapping provided
+            # Determine category_id based on title
             category_id = None
-            if category_mapping:
-                video_title = processed["title"].lower()
-                
+            video_title = processed["title"].lower()
+            
+            # First check exact title matches
+            if video_title in category_mapping:
+                category_id = category_mapping[video_title]
+            else:
+                # Then check partial matches
                 for pattern, cat_id in category_mapping.items():
-                    if pattern.lower() in video_title:
+                    if pattern in video_title or video_title in pattern:
                         category_id = cat_id
                         break
+                        
+                # If still no match, try additional pattern matching
+                if category_id is None:
+                    if any(ft.lower() in video_title for ft in fundamental_titles):
+                        fundamentals_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Fundamentals").first()
+                        if fundamentals_category:
+                            category_id = fundamentals_category.id
+                    elif "early game" in video_title or "early-game" in video_title:
+                        early_game_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Early Game Course").first()
+                        if early_game_category:
+                            category_id = early_game_category.id
+                    elif "midgame" in video_title or "mid game" in video_title or "mid-game" in video_title:
+                        midgame_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Midgame Course").first()
+                        if midgame_category:
+                            category_id = midgame_category.id
+                    elif "class" in video_title:
+                        classes_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Classes").first()
+                        if classes_category:
+                            category_id = classes_category.id
+                    elif "practical" in video_title:
+                        practical_category = db.query(models.VideoCategory).filter(models.VideoCategory.name == "Practical Course").first()
+                        if practical_category:
+                            category_id = practical_category.id
             
             # Ensure tags is a proper list
             if processed["tags"] and not isinstance(processed["tags"], list):
