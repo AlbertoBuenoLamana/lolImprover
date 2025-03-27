@@ -129,9 +129,20 @@ const VideoPlayer: React.FC<{
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const youtubePlayerRef = useRef<any>(null);
+  const [seekIndicator, setSeekIndicator] = useState<{visible: boolean, direction: 'forward' | 'backward', seconds: number} | null>(null);
   
   // Check if URL is a YouTube URL
   const isYouTubeUrl = url.includes('youtube.com') || url.includes('youtu.be');
+  
+  // Function to show seek indicator
+  const showSeekIndicator = (direction: 'forward' | 'backward', seconds: number) => {
+    setSeekIndicator({ visible: true, direction, seconds });
+    
+    // Hide indicator after 1 second
+    setTimeout(() => {
+      setSeekIndicator(null);
+    }, 1000);
+  };
   
   // Extract YouTube video ID from URL
   const getYouTubeEmbedUrl = (url: string) => {
@@ -293,6 +304,93 @@ const VideoPlayer: React.FC<{
     };
   }, [onTimeUpdate, onVideoEnd, isYouTubeUrl, onPause]);
 
+  // Add keyboard controls for seeking
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle keyboard events when the video player is in focus
+      if (!videoRef.current) return;
+      
+      switch (e.key) {
+        case 'ArrowRight':
+          // Seek forward 5 seconds
+          if (videoRef.current) {
+            const newTime = Math.min(videoRef.current.currentTime + 5, videoRef.current.duration);
+            videoRef.current.currentTime = newTime;
+            setCurrentTime(newTime);
+            onTimeUpdate(newTime);
+            showSeekIndicator('forward', 5);
+            console.log('Seeking forward 5 seconds to:', newTime);
+          }
+          break;
+        case 'ArrowLeft':
+          // Seek backward 5 seconds
+          if (videoRef.current) {
+            const newTime = Math.max(videoRef.current.currentTime - 5, 0);
+            videoRef.current.currentTime = newTime;
+            setCurrentTime(newTime);
+            onTimeUpdate(newTime);
+            showSeekIndicator('backward', 5);
+            console.log('Seeking backward 5 seconds to:', newTime);
+          }
+          break;
+      }
+    };
+
+    // Add event listener for keyboard controls
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onTimeUpdate]);
+
+  // Similar implementation for YouTube player
+  useEffect(() => {
+    if (!isYouTubeUrl || !youtubePlayerRef.current) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!youtubePlayerRef.current) return;
+      
+      switch (e.key) {
+        case 'ArrowRight':
+          try {
+            // Get current time and add 5 seconds
+            const currentTime = youtubePlayerRef.current.getCurrentTime();
+            const newTime = currentTime + 5;
+            youtubePlayerRef.current.seekTo(newTime, true);
+            setCurrentTime(newTime);
+            onTimeUpdate(newTime);
+            showSeekIndicator('forward', 5);
+            console.log('Seeking YouTube video forward 5 seconds to:', newTime);
+          } catch (error) {
+            console.error('Error seeking YouTube video forward:', error);
+          }
+          break;
+        case 'ArrowLeft':
+          try {
+            // Get current time and subtract 5 seconds
+            const currentTime = youtubePlayerRef.current.getCurrentTime();
+            const newTime = Math.max(currentTime - 5, 0);
+            youtubePlayerRef.current.seekTo(newTime, true);
+            setCurrentTime(newTime);
+            onTimeUpdate(newTime);
+            showSeekIndicator('backward', 5);
+            console.log('Seeking YouTube video backward 5 seconds to:', newTime);
+          } catch (error) {
+            console.error('Error seeking YouTube video backward:', error);
+          }
+          break;
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isYouTubeUrl, onTimeUpdate, youtubePlayerRef.current]);
+
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -414,6 +512,37 @@ const VideoPlayer: React.FC<{
           >
             Try Again
           </Button>
+        </Box>
+      )}
+      
+      {/* Seek indicator overlay */}
+      {seekIndicator && seekIndicator.visible && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bgcolor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            borderRadius: '50%',
+            width: 80,
+            height: 80,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+          }}
+        >
+          {seekIndicator.direction === 'forward' ? (
+            <Typography fontSize={24}>⏩</Typography>
+          ) : (
+            <Typography fontSize={24}>⏪</Typography>
+          )}
+          <Typography variant="body2">
+            {seekIndicator.seconds}s
+          </Typography>
         </Box>
       )}
       
@@ -580,43 +709,8 @@ const VideoPlayerPage: React.FC = () => {
   const handleTimeUpdate = async (currentTime: number) => {
     if (!videoId) return;
     
-    // Only save progress every 5 seconds to avoid too many requests
-    if (videoProgress && Math.abs(videoProgress.position_seconds - currentTime) < 5) {
-      return;
-    }
-    
-    try {
-      setSaveStatus('saving');
-      
-      await axios.post(`/videos/${videoId}/progress`, {
-        position_seconds: Math.floor(currentTime),
-        notes: notes,
-        is_bookmarked: bookmarked
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      setSaveStatus('saved');
-      
-      // Update local progress
-      setVideoProgress(prev => prev ? {
-        ...prev,
-        position_seconds: Math.floor(currentTime)
-      } : null);
-      
-      // Reset save status after 2 seconds
-      setTimeout(() => {
-        if (setSaveStatus) {
-          setSaveStatus('idle');
-        }
-      }, 2000);
-    } catch (err) {
-      console.error('Error saving progress:', err);
-      setSaveStatus('error');
-    }
+    // Do nothing - just track internally, no API calls
+    // The video component will handle tracking the current time internally
   };
   
   // Handle pause - save current position
@@ -995,6 +1089,13 @@ const VideoPlayerPage: React.FC = () => {
             onPause={handlePause}
             onDurationChange={handleDurationChange}
           />
+          
+          {/* Keyboard Controls Help */}
+          <Box sx={{ mt: 1, p: 1, bgcolor: 'background.paper', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Keyboard controls: Use ← to rewind 5 seconds, → to forward 5 seconds
+            </Typography>
+          </Box>
         </Paper>
         
         {/* Save Status */}
