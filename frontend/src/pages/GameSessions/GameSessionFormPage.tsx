@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Formik, Form, Field, FieldArray, FormikErrors, FormikTouched } from 'formik';
@@ -35,8 +35,10 @@ import {
   clearCurrentSession 
 } from '../../store/slices/gameSessionSlice';
 import { RootState, AppDispatch } from '../../store';
-import { GameSessionFormData } from '../../types';
+import { GameSessionFormData, Goal, GameSessionGoalProgress, GameSessionCreate } from '../../types';
 import ChampionSelect from '../../components/GameSessions/ChampionSelect';
+import GameSessionGoals from '../../components/Feature/GameSessionGoals';
+import { fetchGoals } from '../../store/slices/goalSlice';
 
 // Validation schema
 const GameSessionSchema = Yup.object().shape({
@@ -67,6 +69,13 @@ const GameSessionFormPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
   const { currentSession, loading, error } = useSelector((state: RootState) => state.gameSessions as GameSessionState);
+  const { goals } = useSelector((state: RootState) => state.goals);
+  
+  // Filter to only show active goals
+  const activeGoals = goals.filter(goal => goal.status === 'active');
+  
+  // State to manage selected goals in the form
+  const [selectedGoals, setSelectedGoals] = useState<GameSessionGoalProgress[]>([]);
   
   const isEditMode = !!id;
   
@@ -105,6 +114,7 @@ const GameSessionFormPage: React.FC = () => {
       vision_score: 0,
       mood_rating: 3,
       goals: [],
+      goal_progress: [],
       notes: '',
     };
   };
@@ -114,10 +124,20 @@ const GameSessionFormPage: React.FC = () => {
       dispatch(fetchGameSession(parseInt(id)));
     }
     
+    // Load the goals for the user
+    dispatch(fetchGoals());
+    
     return () => {
       dispatch(clearCurrentSession());
     };
   }, [dispatch, isEditMode, id]);
+  
+  // Initialize selected goals from current session if in edit mode
+  useEffect(() => {
+    if (isEditMode && currentSession && currentSession.goal_progress) {
+      setSelectedGoals(currentSession.goal_progress);
+    }
+  }, [isEditMode, currentSession]);
   
   const getFormValues = (): GameSessionFormData => {
     if (isEditMode && currentSession) {
@@ -137,26 +157,58 @@ const GameSessionFormPage: React.FC = () => {
         vision_score: currentSession.vision_score || 0,
         mood_rating: currentSession.mood_rating || 3,
         goals: goalsArray,
+        goal_progress: currentSession.goal_progress || [],
         notes: currentSession.notes || '',
       };
     }
     return getInitialValues();
   };
   
+  // Add goal to the selected goals
+  const handleAddGoal = (goalId: number) => {
+    const goalToAdd = goals.find(g => g.id === goalId);
+    if (goalToAdd) {
+      setSelectedGoals(prev => [
+        ...prev,
+        {
+          goal_id: goalId,
+          title: goalToAdd.title,
+          notes: '',
+          progress_rating: 3 // Default rating
+        }
+      ]);
+    }
+  };
+  
+  // Remove goal from selected goals
+  const handleRemoveGoal = (goalId: number) => {
+    setSelectedGoals(prev => prev.filter(g => g.goal_id !== goalId));
+  };
+  
+  // Update notes for a goal
+  const handleGoalNotesChange = (goalId: number, notes: string) => {
+    setSelectedGoals(prev => 
+      prev.map(g => g.goal_id === goalId ? { ...g, notes } : g)
+    );
+  };
+  
+  // Update progress rating for a goal
+  const handleGoalProgressChange = (goalId: number, progress: number) => {
+    setSelectedGoals(prev => 
+      prev.map(g => g.goal_id === goalId ? { ...g, progress_rating: progress } : g)
+    );
+  };
+  
   const handleSubmit = async (values: GameSessionFormData) => {
-    // Convert goals from array to object (dictionary)
-    const goalsObject = values.goals?.reduce((obj: Record<string, boolean>, goal: { title: string; achieved: boolean }) => {
-      obj[goal.title] = goal.achieved;
-      return obj;
-    }, {} as Record<string, boolean>) || {};
-    
     // Create session data with only the fields expected by the backend
-    const sessionData = {
+    // Use the GameSessionCreate type which matches what the API expects
+    const sessionData: GameSessionCreate = {
       player_character: values.player_character || values.champion,
       enemy_character: values.enemy_character || values.enemy_champion,
       result: values.result,
       mood_rating: values.mood_rating,
-      goals: goalsObject,
+      // No longer using the goalsObject derived from values.goals
+      goal_progress: selectedGoals,
       notes: values.notes,
       // Only send date if provided and it's a valid ISO string
       ...(values.date && { date: new Date(values.date).toISOString() })
@@ -267,95 +319,20 @@ const GameSessionFormPage: React.FC = () => {
                   
                   <Grid item xs={12}>
                     <Divider sx={{ my: 2 }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">Goals</Typography>
-                      <Tooltip title="Add Goal">
-                        <IconButton
-                          color="primary"
-                          onClick={() => {
-                            setFieldValue('goals', [
-                              ...values.goals,
-                              { title: '', achieved: false },
-                            ]);
-                          }}
-                        >
-                          <AddIcon />
-                        </IconButton>
-                      </Tooltip>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Box mt={2}>
+                      <GameSessionGoals
+                        activeGoals={activeGoals}
+                        selectedGoals={selectedGoals}
+                        onAddGoal={handleAddGoal}
+                        onRemoveGoal={handleRemoveGoal}
+                        onGoalNotesChange={handleGoalNotesChange}
+                        onGoalProgressChange={handleGoalProgressChange}
+                        loading={loading}
+                      />
                     </Box>
-                    
-                    <FieldArray name="goals">
-                      {({ push, remove, form }) => (
-                        <div>
-                          {values.goals && values.goals.map((goal: { title: string; achieved: boolean }, index: number) => (
-                            <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                              <Grid container spacing={2} alignItems="center">
-                                <Grid item xs={8}>
-                                  <Field
-                                    as={TextField}
-                                    fullWidth
-                                    name={`goals.${index}.title`}
-                                    label="Goal Title"
-                                    error={
-                                      touched.goals && 
-                                      Array.isArray(touched.goals) && 
-                                      touched.goals[index] && 
-                                      typeof touched.goals[index] === 'object' &&
-                                      'title' in (touched.goals[index] as object) &&
-                                      Boolean(errors.goals && 
-                                      Array.isArray(errors.goals) && 
-                                      errors.goals[index] && 
-                                      typeof errors.goals[index] === 'object' &&
-                                      'title' in (errors.goals[index] as object))
-                                    }
-                                    helperText={
-                                      touched.goals && 
-                                      Array.isArray(touched.goals) && 
-                                      touched.goals[index] && 
-                                      typeof touched.goals[index] === 'object' &&
-                                      'title' in (touched.goals[index] as object) &&
-                                      (errors.goals && 
-                                      Array.isArray(errors.goals) && 
-                                      errors.goals[index] && 
-                                      typeof errors.goals[index] === 'object' &&
-                                      'title' in (errors.goals[index] as object) ?
-                                      String((errors.goals[index] as any).title) : null)
-                                    }
-                                  />
-                                </Grid>
-                                <Grid item xs={3}>
-                                  <FormControlLabel
-                                    control={
-                                      <Field
-                                        as={Radio}
-                                        name={`goals.${index}.achieved`}
-                                        checked={values.goals[index].achieved}
-                                        onChange={() => {
-                                          setFieldValue(`goals.${index}.achieved`, !values.goals[index].achieved);
-                                        }}
-                                      />
-                                    }
-                                    label="Achieved"
-                                  />
-                                </Grid>
-                                <Grid item xs={1}>
-                                  <IconButton
-                                    color="error"
-                                    onClick={() => {
-                                      const newGoals = [...values.goals];
-                                      newGoals.splice(index, 1);
-                                      setFieldValue('goals', newGoals);
-                                    }}
-                                  >
-                                    <DeleteIcon />
-                                  </IconButton>
-                                </Grid>
-                              </Grid>
-                            </Box>
-                          ))}
-                        </div>
-                      )}
-                    </FieldArray>
                   </Grid>
                   
                   <Grid item xs={12}>

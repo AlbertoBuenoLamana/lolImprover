@@ -19,9 +19,31 @@ def create_game_session(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_active_user)
 ):
+    # Convert the game_session to a dict
+    game_session_data = game_session.model_dump()
+    
+    # Extract goal_progress if it exists, otherwise default to empty list
+    goal_progress = game_session_data.pop("goal_progress", [])
+    
+    # Validate that all goals in goal_progress belong to the user
+    if goal_progress:
+        goal_ids = [g.get("goal_id") for g in goal_progress]
+        user_goals = db.query(models.Goal).filter(
+            models.Goal.id.in_(goal_ids),
+            models.Goal.user_id == current_user.id
+        ).all()
+        
+        if len(user_goals) != len(goal_ids):
+            raise HTTPException(
+                status_code=400, 
+                detail="One or more goals in goal_progress do not belong to the user"
+            )
+    
+    # Create the game session
     db_game_session = models.GameSession(
-        **game_session.dict(),
-        user_id=current_user.id
+        **game_session_data,
+        user_id=current_user.id,
+        goal_progress=goal_progress
     )
     db.add(db_game_session)
     db.commit()
@@ -71,7 +93,27 @@ def update_game_session(
     if db_game_session is None:
         raise HTTPException(status_code=404, detail="Game session not found")
     
-    for key, value in game_session.dict().items():
+    # Convert the game_session to a dict
+    game_session_data = game_session.model_dump()
+    
+    # Extract goal_progress if it exists
+    goal_progress = game_session_data.get("goal_progress")
+    
+    # Validate that all goals in goal_progress belong to the user
+    if goal_progress:
+        goal_ids = [g.get("goal_id") for g in goal_progress]
+        user_goals = db.query(models.Goal).filter(
+            models.Goal.id.in_(goal_ids),
+            models.Goal.user_id == current_user.id
+        ).all()
+        
+        if len(user_goals) != len(goal_ids):
+            raise HTTPException(
+                status_code=400, 
+                detail="One or more goals in goal_progress do not belong to the user"
+            )
+    
+    for key, value in game_session_data.items():
         setattr(db_game_session, key, value)
     
     db.commit()

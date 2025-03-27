@@ -17,6 +17,7 @@ import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GroupIcon from '@mui/icons-material/Group';
+import FlagIcon from '@mui/icons-material/Flag';
 import { RootState } from '../../store';
 import { User } from '../../types';
 
@@ -33,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const menuItems = [
     { text: 'Home', icon: <HomeIcon />, path: '/', requireAuth: false },
     { text: 'Game Sessions', icon: <VideogameAssetIcon />, path: '/game-sessions', requireAuth: true },
+    { text: 'Goals', icon: <FlagIcon />, path: '/goals', requireAuth: true },
     { text: 'Video Tutorials', icon: <VideoLibraryIcon />, path: '/video-tutorials', requireAuth: true },
     { text: 'Creators', icon: <GroupIcon />, path: '/creators', requireAuth: true },
     { text: 'Profile', icon: <PersonIcon />, path: '/profile', requireAuth: true },

@@ -1,6 +1,14 @@
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Literal
 from pydantic import BaseModel, EmailStr, HttpUrl, field_validator
 from datetime import datetime
+
+
+# Game Session Goal Progress schemas - moved up to avoid circular dependency
+class GameSessionGoalProgress(BaseModel):
+    goal_id: int
+    title: str
+    notes: Optional[str] = None
+    progress_rating: int  # 1-5 rating
 
 
 # User schemas
@@ -20,7 +28,6 @@ class User(UserBase):
     is_admin: bool = False
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 
@@ -35,6 +42,7 @@ class GameSessionBase(BaseModel):
     result: str  # Win/Lose
     mood_rating: int  # 1-5 scale
     goals: Optional[Dict[str, Any]] = None
+    goal_progress: Optional[List[GameSessionGoalProgress]] = None
     notes: Optional[str] = None
 
 
@@ -48,7 +56,7 @@ class GameSession(GameSessionBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Video Category schemas
@@ -65,7 +73,7 @@ class VideoCategory(VideoCategoryBase):
     id: int
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Creator schemas
@@ -83,7 +91,6 @@ class Creator(CreatorBase):
     id: int
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 
@@ -120,7 +127,6 @@ class VideoTutorial(VideoTutorialBase):
     tags: Optional[List[str]] = None
 
     class Config:
-        orm_mode = True
         from_attributes = True
     
     @field_validator('tags', mode='before')
@@ -142,7 +148,6 @@ class VideoTutorialWithCategory(VideoTutorial):
     creator_obj: Optional[Creator] = None  # Include creator info
 
     class Config:
-        orm_mode = True
         from_attributes = True
 
 
@@ -177,7 +182,6 @@ class VideoProgress(VideoProgressBase):
     video_id: int
 
     class Config:
-        orm_mode = True
         from_attributes = True
         # This will make it possible to both accept and return the 'notes' field
         populate_by_name = True
@@ -237,3 +241,28 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+
+# Goal schemas
+class GoalBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    status: Literal["active", "completed", "archived"] = "active"
+
+
+class GoalCreate(GoalBase):
+    pass
+
+
+class Goal(GoalBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    user_id: int
+
+    class Config:
+        from_attributes = True
+
+
+class GoalStatusUpdate(BaseModel):
+    status: Literal["active", "completed", "archived"]

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from '../../api/axios';
-import { GameSession, GameSessionCreate } from '../../types';
+import { GameSession, GameSessionFormData, GameSessionCreate } from '../../types';
+import * as gameSessionApi from '../../api/gameSessionApi';
 
 interface GameSessionState {
   sessions: GameSession[];
@@ -55,29 +55,11 @@ const extractErrorMessage = (error: any): string => {
 // Get all game sessions
 export const fetchGameSessions = createAsyncThunk(
   'gameSessions/fetchAll',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      // Get auth state from Redux
-      const { auth } = getState() as { auth: { token: string | null } };
-      
-      // Use token from Redux state or fallback to localStorage
-      const token = auth.token || localStorage.getItem('token');
-      
-      if (!token) {
-        return rejectWithValue('Authentication required. Please log in.');
-      }
-      
-      console.log('Fetching game sessions with token:', token ? 'Token exists' : 'No token');
-      
-      const response = await axios.get('/game-sessions/', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      return response.data;
+      return await gameSessionApi.fetchGameSessions();
     } catch (error: any) {
-      console.error('Failed to fetch game sessions:', error.response?.data || error.message);
+      console.error('Failed to fetch game sessions:', error);
       return rejectWithValue(extractErrorMessage(error));
     }
   }
@@ -86,27 +68,11 @@ export const fetchGameSessions = createAsyncThunk(
 // Get a single game session
 export const fetchGameSession = createAsyncThunk(
   'gameSessions/fetchOne',
-  async (id: number, { getState, rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
-      // Get auth state from Redux
-      const { auth } = getState() as { auth: { token: string | null } };
-      
-      // Use token from Redux state or fallback to localStorage
-      const token = auth.token || localStorage.getItem('token');
-      
-      if (!token) {
-        return rejectWithValue('Authentication required. Please log in.');
-      }
-      
-      const response = await axios.get(`/game-sessions/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      return response.data;
+      return await gameSessionApi.fetchGameSession(id);
     } catch (error: any) {
-      console.error('Failed to fetch game session:', error.response?.data || error.message);
+      console.error('Failed to fetch game session:', error);
       return rejectWithValue(extractErrorMessage(error));
     }
   }
@@ -115,28 +81,11 @@ export const fetchGameSession = createAsyncThunk(
 // Create a new game session
 export const createGameSession = createAsyncThunk(
   'gameSessions/create',
-  async (sessionData: GameSessionCreate, { getState, rejectWithValue }) => {
+  async (sessionData: GameSessionCreate, { rejectWithValue }) => {
     try {
-      // Get auth state from Redux
-      const { auth } = getState() as { auth: { token: string | null } };
-      
-      // Use token from Redux state or fallback to localStorage
-      const token = auth.token || localStorage.getItem('token');
-      
-      if (!token) {
-        return rejectWithValue('Authentication required. Please log in.');
-      }
-      
-      const response = await axios.post('/game-sessions/', sessionData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      return response.data;
+      return await gameSessionApi.createGameSession(sessionData);
     } catch (error: any) {
-      console.error('Failed to create game session:', error.response?.data || error.message);
+      console.error('Failed to create game session:', error);
       return rejectWithValue(extractErrorMessage(error));
     }
   }
@@ -145,28 +94,11 @@ export const createGameSession = createAsyncThunk(
 // Update a game session
 export const updateGameSession = createAsyncThunk(
   'gameSessions/update',
-  async ({ id, sessionData }: { id: number; sessionData: GameSessionCreate }, { getState, rejectWithValue }) => {
+  async ({ id, sessionData }: { id: number; sessionData: GameSessionCreate }, { rejectWithValue }) => {
     try {
-      // Get auth state from Redux
-      const { auth } = getState() as { auth: { token: string | null } };
-      
-      // Use token from Redux state or fallback to localStorage
-      const token = auth.token || localStorage.getItem('token');
-      
-      if (!token) {
-        return rejectWithValue('Authentication required. Please log in.');
-      }
-      
-      const response = await axios.put(`/game-sessions/${id}`, sessionData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      return response.data;
+      return await gameSessionApi.updateGameSession(id, sessionData);
     } catch (error: any) {
-      console.error('Failed to update game session:', error.response?.data || error.message);
+      console.error('Failed to update game session:', error);
       return rejectWithValue(extractErrorMessage(error));
     }
   }
@@ -175,27 +107,12 @@ export const updateGameSession = createAsyncThunk(
 // Delete a game session
 export const deleteGameSession = createAsyncThunk(
   'gameSessions/delete',
-  async (id: number, { getState, rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
-      // Get auth state from Redux
-      const { auth } = getState() as { auth: { token: string | null } };
-      
-      // Use token from Redux state or fallback to localStorage
-      const token = auth.token || localStorage.getItem('token');
-      
-      if (!token) {
-        return rejectWithValue('Authentication required. Please log in.');
-      }
-      
-      await axios.delete(`/game-sessions/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
+      await gameSessionApi.deleteGameSession(id);
       return id;
     } catch (error: any) {
-      console.error('Failed to delete game session:', error.response?.data || error.message);
+      console.error('Failed to delete game session:', error);
       return rejectWithValue(extractErrorMessage(error));
     }
   }

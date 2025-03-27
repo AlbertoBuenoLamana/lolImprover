@@ -3,6 +3,7 @@ import authReducer from './slices/authSlice';
 import gameSessionReducer from './slices/gameSessionSlice';
 import videoReducer from './slices/videoSlice';
 import creatorReducer from './slices/creatorSlice';
+import goalReducer from './slices/goalSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     gameSessions: gameSessionReducer,
     videos: videoReducer,
     creators: creatorReducer,
+    goals: goalReducer,
   },
 });
 

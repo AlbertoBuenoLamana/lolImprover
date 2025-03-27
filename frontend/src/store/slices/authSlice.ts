@@ -78,7 +78,7 @@ export const login = createAsyncThunk(
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
       
-      const response = await axios.post('http://localhost:8000/token', formData, {
+      const response = await axios.post('/token', formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -90,11 +90,7 @@ export const login = createAsyncThunk(
       localStorage.setItem('token', access_token);
       
       // Get user data
-      const userResponse = await axios.get('http://localhost:8000/users/me', {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-      });
+      const userResponse = await axios.get('/users/me');
       
       return {
         user: userResponse.data,
@@ -113,8 +109,8 @@ export const register = createAsyncThunk(
   async (userData: { username: string; email: string; password: string }, { rejectWithValue }) => {
     try {
       console.log('Attempting to register user:', userData);
-      // Use the full URL path to ensure the request goes to the correct endpoint
-      const response = await axios.post('http://localhost:8000/users/', userData);
+      // Use the axios instance with configured baseURL
+      const response = await axios.post('/users/', userData);
       console.log('Registration successful:', response.data);
       return response.data;
     } catch (error: any) {
@@ -135,11 +131,8 @@ export const getCurrentUser = createAsyncThunk(
         return rejectWithValue('No token found');
       }
       
-      const response = await axios.get('http://localhost:8000/users/me', {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
+      // Use the axios instance which already handles the auth token
+      const response = await axios.get('/users/me');
       
       return response.data;
     } catch (error: any) {

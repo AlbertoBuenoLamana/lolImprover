@@ -1,8 +1,15 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, JSON, Float
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, JSON, Float, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import enum
 
 from .database import Base
+
+# Define the GoalStatus enum
+class GoalStatus(str, enum.Enum):
+    active = "active"
+    completed = "completed"
+    archived = "archived"
 
 
 class User(Base):
@@ -17,6 +24,7 @@ class User(Base):
     
     game_sessions = relationship("GameSession", back_populates="user")
     video_progress = relationship("VideoProgress", back_populates="user")
+    goals = relationship("Goal", back_populates="user")
 
 
 class GameSession(Base):
@@ -29,6 +37,7 @@ class GameSession(Base):
     result = Column(String)  # Win/Lose
     mood_rating = Column(Integer)  # 1-5 scale
     goals = Column(JSON)  # Store goals as JSON
+    goal_progress = Column(JSON)  # Store goal progress as JSON
     notes = Column(Text, nullable=True)
     
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -100,3 +109,17 @@ class VideoProgress(Base):
     
     user = relationship("User", back_populates="video_progress")
     video = relationship("VideoTutorial", back_populates="progress")
+
+
+class Goal(Base):
+    __tablename__ = "goals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(Text, nullable=True)
+    status = Column(String, default="active")  # active, completed, archived
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="goals")

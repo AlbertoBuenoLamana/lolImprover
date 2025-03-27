@@ -19,6 +19,7 @@ import { getCurrentUser } from './store/slices/authSlice';
 import { RootState, AppDispatch } from './store';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import CreatorsPage from './pages/Videos/CreatorsPage';
+import GoalManagementPage from './pages/GoalManagementPage';
 import type { User } from './types';
 
 const App: React.FC = () => {
@@ -56,6 +57,9 @@ const App: React.FC = () => {
             <Route path="video-tutorials/new" element={<VideoFormPage />} />
             <Route path="video-tutorials/edit/:id" element={<VideoFormPage />} />
             <Route path="video-tutorials/:videoId" element={<VideoPlayerPage />} />
+            
+            {/* Goals routes */}
+            <Route path="goals" element={<GoalManagementPage />} />
             
             <Route path="profile" element={<ProfilePage />} />
             <Route path="creators" element={<CreatorsPage />} />

@@ -206,8 +206,52 @@ export const gameSessionComponents: Record<string, ComponentMetadata> = {
     path: 'pages/GameSessions/GameSessionFormPage.tsx',
     description: 'Form for creating or editing game sessions',
     category: 'page',
-    dependencies: [],
+    dependencies: ['GameSessionGoals'],
     usedBy: ['App'],
+  },
+  GameSessionGoals: {
+    name: 'GameSessionGoals',
+    path: 'components/Feature/GameSessionGoals.tsx',
+    description: 'Component for selecting and tracking goals within game sessions',
+    category: 'feature',
+    dependencies: [],
+    usedBy: ['GameSessionFormPage'],
+  },
+};
+
+// Goals components
+export const goalComponents: Record<string, ComponentMetadata> = {
+  GoalManagementPage: {
+    name: 'GoalManagementPage',
+    path: 'pages/GoalManagementPage.tsx',
+    description: 'Page for managing goals with tabs for active, completed, and archived goals',
+    category: 'page',
+    dependencies: ['GoalList', 'GoalForm'],
+    usedBy: ['App'],
+  },
+  GoalList: {
+    name: 'GoalList',
+    path: 'components/Ui/GoalList.tsx',
+    description: 'Component for displaying a list of goals with filtering and status management',
+    category: 'ui',
+    dependencies: ['GoalItem'],
+    usedBy: ['GoalManagementPage'],
+  },
+  GoalItem: {
+    name: 'GoalItem',
+    path: 'components/Ui/GoalItem.tsx',
+    description: 'Component for displaying individual goal items with actions',
+    category: 'ui',
+    dependencies: [],
+    usedBy: ['GoalList'],
+  },
+  GoalForm: {
+    name: 'GoalForm',
+    path: 'components/Form/GoalForm.tsx',
+    description: 'Form for creating or editing goals',
+    category: 'form',
+    dependencies: [],
+    usedBy: ['GoalManagementPage'],
   },
 };
 
@@ -231,6 +275,7 @@ export const getAllComponents = (): ComponentMetadata[] => {
     ...Object.values(pageComponents),
     ...Object.values(videoComponents),
     ...Object.values(gameSessionComponents),
+    ...Object.values(goalComponents),
     ...Object.values(adminComponents),
   ];
 };

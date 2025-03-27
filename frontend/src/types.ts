@@ -1,5 +1,29 @@
 // Common types for the LoL Improve application
 
+// Goal Types
+export interface Goal {
+  id?: number;
+  user_id?: number;
+  title: string;
+  description: string;
+  status: 'active' | 'completed' | 'archived';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GoalFormData {
+  title: string;
+  description: string;
+  status: 'active' | 'completed' | 'archived';
+}
+
+export interface GameSessionGoalProgress {
+  goal_id: number;
+  title: string;
+  notes: string;
+  progress_rating: number; // 1-5 rating for progress on this goal during the session
+}
+
 // Game Session Types
 export interface GameSession {
   id: number;
@@ -15,6 +39,7 @@ export interface GameSession {
   vision_score: number;
   mood_rating: number;
   goals: Record<string, boolean>;
+  goal_progress?: GameSessionGoalProgress[];
   notes: string;
   created_at: string;
   updated_at: string;
@@ -32,6 +57,7 @@ export interface GameSessionFormData {
   vision_score: number;
   mood_rating: number;
   goals: Array<{ title: string; achieved: boolean }>;
+  goal_progress?: Array<GameSessionGoalProgress>;
   notes: string;
 }
 
@@ -41,6 +67,7 @@ export interface GameSessionCreate {
   result: string;  // Win/Lose
   mood_rating: number;  // 1-5 scale
   goals?: Record<string, boolean>;
+  goal_progress?: GameSessionGoalProgress[];
   notes?: string;
   date?: string;
 }
