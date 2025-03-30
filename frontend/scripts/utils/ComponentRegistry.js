@@ -62,6 +62,32 @@ const uiComponents = {
     dependencies: [],
     usedBy: ['VideoTutorialsPage'],
   },
+  GoalList: {
+    name: 'GoalList',
+    path: 'components/Ui/GoalList.tsx',
+    description: 'Component for displaying a list of goals with filtering and status management',
+    category: 'ui',
+    dependencies: ['GoalItem'],
+    usedBy: ['GoalManagementPage'],
+  },
+  GoalItem: {
+    name: 'GoalItem',
+    path: 'components/Ui/GoalItem.tsx',
+    description: 'Component for displaying individual goal items with actions',
+    category: 'ui',
+    dependencies: [],
+    usedBy: ['GoalList'],
+  },
+  Logo: {
+    name: 'Logo',
+    path: 'components/Ui/Logo.tsx',
+    description: 'A reusable logo component that displays the LoL Improve logo with consistent styling across the application',
+    category: 'ui',
+    dependencies: [],
+    usedBy: ['Header', 'Footer', 'HomePage', 'LoginPage', 'RegisterPage'],
+    propsInterface: 'LogoProps',
+    example: '<Logo size="medium" variant="default" />'
+  },
 };
 
 // Page components
@@ -205,22 +231,6 @@ const goalComponents = {
     category: 'page',
     dependencies: ['GoalList', 'GoalForm'],
     usedBy: ['App'],
-  },
-  GoalList: {
-    name: 'GoalList',
-    path: 'components/Ui/GoalList.tsx',
-    description: 'Component for displaying a list of goals with filtering and status management',
-    category: 'ui',
-    dependencies: ['GoalItem'],
-    usedBy: ['GoalManagementPage'],
-  },
-  GoalItem: {
-    name: 'GoalItem',
-    path: 'components/Ui/GoalItem.tsx',
-    description: 'Component for displaying individual goal items with actions',
-    category: 'ui',
-    dependencies: [],
-    usedBy: ['GoalList'],
   },
   GoalForm: {
     name: 'GoalForm',

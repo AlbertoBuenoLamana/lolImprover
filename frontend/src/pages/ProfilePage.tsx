@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { updateUserProfile, getCurrentUser } from '../store/slices/authSlice';
 import { RootState, AppDispatch } from '../store';
+import Logo from '../components/Ui/Logo';
 
 // Validation schema
 const ProfileSchema = Yup.object().shape({
@@ -129,9 +130,12 @@ const ProfilePage: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Your Profile
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <Logo size="small" variant="default" sx={{ mr: 2 }} />
+          <Typography variant="h4" component="h1" gutterBottom>
+            Your Profile
+          </Typography>
+        </Box>
 
         <Grid container spacing={4}>
           <Grid item xs={12} md={4}>

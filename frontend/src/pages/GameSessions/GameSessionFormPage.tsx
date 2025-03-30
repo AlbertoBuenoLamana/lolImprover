@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Formik, Form, Field, FieldArray, FormikErrors, FormikTouched } from 'formik';
@@ -24,6 +24,7 @@ import {
   Card,
   CardContent,
   Tooltip,
+  Snackbar,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -38,6 +39,7 @@ import { RootState, AppDispatch } from '../../store';
 import { GameSessionFormData, Goal, GameSessionGoalProgress, GameSessionCreate } from '../../types';
 import ChampionSelect from '../../components/GameSessions/ChampionSelect';
 import GameSessionGoals from '../../components/Feature/GameSessionGoals';
+import ReviewTimer from '../../components/GameSessions/ReviewTimer';
 import { fetchGoals } from '../../store/slices/goalSlice';
 
 // Validation schema
@@ -76,6 +78,9 @@ const GameSessionFormPage: React.FC = () => {
   
   // State to manage selected goals in the form
   const [selectedGoals, setSelectedGoals] = useState<GameSessionGoalProgress[]>([]);
+  
+  // State for notification when timer ends
+  const [showTimerNotification, setShowTimerNotification] = useState<boolean>(false);
   
   const isEditMode = !!id;
   
@@ -197,6 +202,22 @@ const GameSessionFormPage: React.FC = () => {
     setSelectedGoals(prev => 
       prev.map(g => g.goal_id === goalId ? { ...g, progress_rating: progress } : g)
     );
+  };
+  
+  // Handle timer completion
+  const handleTimerComplete = useCallback(() => {
+    setShowTimerNotification(true);
+    // Optional: Auto-scroll to notes section
+    const notesElement = document.getElementById('notes');
+    if (notesElement) {
+      notesElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      notesElement.focus();
+    }
+  }, []);
+
+  // Close notification
+  const handleCloseNotification = () => {
+    setShowTimerNotification(false);
   };
   
   const handleSubmit = async (values: GameSessionFormData) => {
@@ -321,6 +342,28 @@ const GameSessionFormPage: React.FC = () => {
                     <Divider sx={{ my: 2 }} />
                   </Grid>
                   
+                  {/* Review Timer */}
+                  <Grid item xs={12}>
+                    <Box sx={{ my: 2 }}>
+                      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                        Set Review Timer
+                        <Tooltip title="Set a 10-minute timer to focus on your game review">
+                          <span style={{ marginLeft: '8px', fontSize: '14px', color: 'rgba(0, 0, 0, 0.6)' }}>
+                            (Recommended)
+                          </span>
+                        </Tooltip>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" paragraph>
+                        Use this timer to limit your review to 10 minutes. Focus on key points and avoid overthinking.
+                      </Typography>
+                      <ReviewTimer onTimerComplete={handleTimerComplete} />
+                    </Box>
+                  </Grid>
+                  
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                  </Grid>
+                  
                   <Grid item xs={12}>
                     <Box mt={2}>
                       <GameSessionGoals
@@ -373,6 +416,26 @@ const GameSessionFormPage: React.FC = () => {
           </Formik>
         </Paper>
       </Box>
+      
+      {/* Timer complete notification */}
+      <Snackbar
+        open={showTimerNotification}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        message="⏰ Time's up! 10-minute review period has ended."
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        ContentProps={{
+          sx: {
+            backgroundColor: 'error.dark',
+            fontWeight: 'bold'
+          }
+        }}
+        action={
+          <Button color="inherit" size="small" onClick={handleCloseNotification}>
+            OK
+          </Button>
+        }
+      />
     </Container>
   );
 };

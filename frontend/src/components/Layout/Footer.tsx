@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Typography, Link, Container } from '@mui/material';
+import { Box, Typography, Link, Container, Stack } from '@mui/material';
+import Logo from '../Ui/Logo';
 
 const Footer: React.FC = () => {
   return (
@@ -13,15 +14,22 @@ const Footer: React.FC = () => {
       }}
     >
       <Container maxWidth="lg">
-        <Typography variant="body2" color="text.secondary" align="center">
-          {'© '}
-          {new Date().getFullYear()}
-          {' '}
-          <Link color="inherit" href="/">
-            LoL Improve
-          </Link>
-          {' - Track your League of Legends performance'}
-        </Typography>
+        <Stack 
+          direction="column" 
+          spacing={2} 
+          alignItems="center"
+        >
+          <Logo size="small" variant="default" />
+          <Typography variant="body2" color="text.secondary" align="center">
+            {'© '}
+            {new Date().getFullYear()}
+            {' '}
+            <Link color="inherit" href="/">
+              LoL Improve
+            </Link>
+            {' - Track your League of Legends performance'}
+          </Typography>
+        </Stack>
       </Container>
     </Box>
   );

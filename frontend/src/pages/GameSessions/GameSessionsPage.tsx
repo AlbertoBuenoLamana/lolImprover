@@ -167,19 +167,24 @@ const GameSessionsPage: React.FC = () => {
           </Paper>
         ) : (
           <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+            <Box sx={{ p: 2, backgroundColor: 'info.light', color: 'info.contrastText', borderRadius: '4px 4px 0 0' }}>
+              <Typography variant="body2">
+                <strong>Tip:</strong> Click on the <KeyboardArrowDownIcon fontSize="small" sx={{ verticalAlign: 'middle' }} /> icon to expand a row and see more details.
+              </Typography>
+            </Box>
             <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)' }}>
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell width="50px"></TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Player Character</TableCell>
-                    <TableCell>Enemy Character</TableCell>
-                    <TableCell align="center">Result</TableCell>
-                    <TableCell align="center">Mood</TableCell>
-                    <TableCell align="center">Goals</TableCell>
-                    <TableCell align="center">Notes</TableCell>
-                    <TableCell align="right">Actions</TableCell>
+                    <TableCell width="150px">Date</TableCell>
+                    <TableCell width="150px">Player Character</TableCell>
+                    <TableCell width="150px">Enemy Character</TableCell>
+                    <TableCell align="center" width="80px">Result</TableCell>
+                    <TableCell align="center" width="70px">Mood</TableCell>
+                    <TableCell width="250px">Goals</TableCell>
+                    <TableCell width="250px">Notes</TableCell>
+                    <TableCell align="right" width="100px">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -193,6 +198,14 @@ const GameSessionsPage: React.FC = () => {
                               aria-label="expand row"
                               size="small"
                               onClick={() => toggleRowExpanded(session.id)}
+                              sx={{ 
+                                bgcolor: expandedRows[session.id] ? 'primary.light' : 'transparent',
+                                color: expandedRows[session.id] ? 'primary.contrastText' : 'primary.main',
+                                '&:hover': {
+                                  bgcolor: 'primary.light',
+                                  color: 'primary.contrastText',
+                                }
+                              }}
                             >
                               {expandedRows[session.id] ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                             </IconButton>
@@ -236,13 +249,51 @@ const GameSessionsPage: React.FC = () => {
                               </Box>
                             </Tooltip>
                           </TableCell>
-                          <TableCell align="center">
-                            {session.goals ? Object.keys(session.goals).length : 0}
+                          <TableCell>
+                            {session.goal_progress && session.goal_progress.length > 0 ? (
+                              <Box sx={{ maxWidth: 300 }}>
+                                {session.goal_progress.map((goalItem, index) => (
+                                  <Tooltip key={index} title={`${goalItem.title}${goalItem.notes ? `: ${goalItem.notes}` : ''}`} placement="top">
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        textDecoration: goalItem.progress_rating >= 4 ? 'line-through' : 'none',
+                                        color: goalItem.progress_rating >= 4 ? 'success.main' : 'inherit',
+                                        mb: 0.5,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        backgroundColor: goalItem.progress_rating >= 4 ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                                        padding: '2px 4px',
+                                        borderRadius: '4px',
+                                      }}
+                                    >
+                                      {goalItem.title.length > 40 ? `${goalItem.title.substring(0, 40)}...` : goalItem.title} {goalItem.progress_rating >= 4 ? '✓' : ''}
+                                    </Typography>
+                                  </Tooltip>
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                No goals set
+                              </Typography>
+                            )}
                           </TableCell>
-                          <TableCell align="center">
+                          <TableCell>
                             {session.notes ? (
-                              <Tooltip title="Has notes">
-                                <NotesIcon color="primary" fontSize="small" />
+                              <Tooltip title={session.notes} placement="top">
+                                <Typography 
+                                  variant="body2" 
+                                  sx={{ 
+                                    maxWidth: 300,
+                                    display: '-webkit-box',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    WebkitLineClamp: 3,
+                                    WebkitBoxOrient: 'vertical'
+                                  }}
+                                >
+                                  {session.notes}
+                                </Typography>
                               </Tooltip>
                             ) : (
                               <Typography variant="body2" color="text.secondary">
@@ -277,6 +328,9 @@ const GameSessionsPage: React.FC = () => {
                                 <Typography variant="h6" gutterBottom component="div">
                                   Session Details
                                 </Typography>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Click on this detailed view to see full information about this game session
+                                </Typography>
                                 <Divider sx={{ mb: 2 }} />
                                 
                                 {/* Notes */}
@@ -303,18 +357,44 @@ const GameSessionsPage: React.FC = () => {
                                     <Typography variant="subtitle1" gutterBottom>
                                       Goals:
                                     </Typography>
-                                    {session.goals && Object.keys(session.goals).length > 0 ? (
-                                      <Box component="ul" sx={{ pl: 2 }}>
-                                        {Object.entries(session.goals).map(([goal, achieved], index) => (
-                                          <Box component="li" key={index} sx={{ mb: 1 }}>
+                                    {session.goal_progress && session.goal_progress.length > 0 ? (
+                                      <Box>
+                                        {session.goal_progress.map((goalItem, index) => (
+                                          <Box 
+                                            key={index} 
+                                            sx={{ 
+                                              mb: 1, 
+                                              p: 1, 
+                                              borderRadius: 1,
+                                              bgcolor: goalItem.progress_rating >= 4 ? 'success.light' : 'background.paper',
+                                              border: 1,
+                                              borderColor: goalItem.progress_rating >= 4 ? 'success.main' : 'divider'
+                                            }}
+                                          >
                                             <Typography
                                               variant="body1"
                                               sx={{
-                                                textDecoration: achieved ? 'line-through' : 'none',
-                                                color: achieved ? 'success.main' : 'inherit',
+                                                textDecoration: goalItem.progress_rating >= 4 ? 'line-through' : 'none',
+                                                color: goalItem.progress_rating >= 4 ? 'success.dark' : 'inherit',
                                               }}
                                             >
-                                              {goal} {achieved ? '✓' : ''}
+                                              {goalItem.title} {goalItem.progress_rating >= 4 ? '✓' : ''}
+                                            </Typography>
+                                            {goalItem.notes && (
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{ mt: 1 }}
+                                              >
+                                                Notes: {goalItem.notes}
+                                              </Typography>
+                                            )}
+                                            <Typography
+                                              variant="body2"
+                                              color="text.secondary"
+                                              sx={{ mt: 0.5 }}
+                                            >
+                                              Progress: {goalItem.progress_rating}/5
                                             </Typography>
                                           </Box>
                                         ))}

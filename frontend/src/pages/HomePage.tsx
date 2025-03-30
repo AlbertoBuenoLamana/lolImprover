@@ -20,6 +20,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { RootState } from '../store';
+import Logo from '../components/Ui/Logo';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -27,13 +28,16 @@ const HomePage: React.FC = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom align="center">
-          Welcome to LoL Improve
-        </Typography>
-        <Typography variant="h5" align="center" color="text.secondary" paragraph>
-          Track your League of Legends game performance and improve your skills with our comprehensive
-          game tracking and video tutorial system.
-        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+          <Logo size="large" variant="default" sx={{ mb: 3 }} />
+          <Typography variant="h3" component="h1" gutterBottom align="center">
+            Welcome to LoL Improve
+          </Typography>
+          <Typography variant="h5" align="center" color="text.secondary" paragraph>
+            Track your League of Legends game performance and improve your skills with our comprehensive
+            game tracking and video tutorial system.
+          </Typography>
+        </Box>
         
         {!isAuthenticated && (
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center', gap: 2 }}>

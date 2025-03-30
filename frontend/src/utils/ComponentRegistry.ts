@@ -267,6 +267,45 @@ export const adminComponents: Record<string, ComponentMetadata> = {
   },
 };
 
+// UI components
+export const uiComponents: Record<string, ComponentMetadata> = {
+  VideoCard: {
+    name: 'VideoCard',
+    path: 'components/Ui/VideoCard.tsx',
+    description: 'Card component for displaying video information',
+    category: 'ui',
+    dependencies: [],
+    usedBy: ['VideoTutorialsPage'],
+  },
+  GoalList: {
+    name: 'GoalList',
+    path: 'components/Ui/GoalList.tsx',
+    description: 'Component for displaying a list of goals with filtering and status management',
+    category: 'ui',
+    dependencies: ['GoalItem'],
+    usedBy: ['GoalManagementPage'],
+  },
+  GoalItem: {
+    name: 'GoalItem',
+    path: 'components/Ui/GoalItem.tsx',
+    description: 'Component for displaying individual goal items with actions',
+    category: 'ui',
+    dependencies: [],
+    usedBy: ['GoalList'],
+  },
+  Logo: {
+    name: 'Logo',
+    path: 'components/Ui/Logo.tsx',
+    description: 'A reusable logo component that displays the LoL Improve logo with consistent styling across the application',
+    category: 'ui',
+    dependencies: [],
+    usedBy: ['Header', 'Footer', 'HomePage', 'LoginPage', 'RegisterPage'],
+    propsInterface: 'LogoProps',
+    example: '<Logo size="medium" variant="default" />'
+  },
+  // Other UI components...
+};
+
 // Helper functions to work with the registry
 export const getAllComponents = (): ComponentMetadata[] => {
   return [
@@ -277,6 +316,7 @@ export const getAllComponents = (): ComponentMetadata[] => {
     ...Object.values(gameSessionComponents),
     ...Object.values(goalComponents),
     ...Object.values(adminComponents),
+    ...Object.values(uiComponents),
   ];
 };
 

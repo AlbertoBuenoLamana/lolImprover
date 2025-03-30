@@ -20,6 +20,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import FlagIcon from '@mui/icons-material/Flag';
 import { RootState } from '../../store';
 import { User } from '../../types';
+import Logo from '../Ui/Logo';
 
 interface SidebarProps {
   open: boolean;
@@ -58,10 +59,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
         },
       }}
     >
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold' }}>
-          LoL Improve
-        </Typography>
+      <Box 
+        sx={{ 
+          p: 2, 
+          display: 'flex', 
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: (theme) => theme.palette.primary.main,
+          color: 'white'
+        }}
+        onClick={() => handleNavigation('/')}
+      >
+        <Logo size="medium" variant="white" />
       </Box>
       
       <Divider />

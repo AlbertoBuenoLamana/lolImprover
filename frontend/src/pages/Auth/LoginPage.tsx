@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { login, clearError } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store';
+import Logo from '../../components/Ui/Logo';
 
 // Validation schema
 const LoginSchema = Yup.object().shape({
@@ -90,9 +91,12 @@ const LoginPage: React.FC = () => {
             borderRadius: 2,
           }}
         >
-          <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Sign in to LoL Improve
-          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+            <Logo size="medium" variant="default" sx={{ mb: 2 }} />
+            <Typography component="h1" variant="h5" align="center" gutterBottom>
+              Sign in to LoL Improve
+            </Typography>
+          </Box>
           
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>

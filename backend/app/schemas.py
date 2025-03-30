@@ -48,7 +48,6 @@ class GameSessionBase(BaseModel):
     enemy_character: str
     result: str  # Win/Lose
     mood_rating: int  # 1-5 scale
-    goals: Optional[Dict[str, Any]] = None
     goal_progress: Optional[List[GameSessionGoalProgress]] = None
     notes: Optional[str] = None
 

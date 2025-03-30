@@ -16,6 +16,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
+import Logo from '../Ui/Logo';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -56,19 +57,27 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           <MenuIcon />
         </IconButton>
         
-        <Typography
-          variant="h6"
+        <Box
           component={RouterLink}
           to="/"
           sx={{
             flexGrow: 1,
             textDecoration: 'none',
             color: 'inherit',
-            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
           }}
         >
-          LoL Improve
-        </Typography>
+          <Logo size="small" variant="white" sx={{ mr: 1 }} />
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 'bold',
+            }}
+          >
+            LoL Improve
+          </Typography>
+        </Box>
 
         {isAuthenticated ? (
           <Box>

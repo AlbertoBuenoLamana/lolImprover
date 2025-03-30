@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { register, clearError } from '../../store/slices/authSlice';
 import { RootState, AppDispatch } from '../../store';
+import Logo from '../../components/Ui/Logo';
 
 // Validation schema
 const RegisterSchema = Yup.object().shape({
@@ -108,9 +109,12 @@ const RegisterPage: React.FC = () => {
             borderRadius: 2,
           }}
         >
-          <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Create an Account
-          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+            <Logo size="medium" variant="default" sx={{ mb: 2 }} />
+            <Typography component="h1" variant="h5" align="center" gutterBottom>
+              Create an Account
+            </Typography>
+          </Box>
           
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>

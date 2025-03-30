@@ -36,7 +36,6 @@ class GameSession(Base):
     enemy_character = Column(String, index=True)
     result = Column(String)  # Win/Lose
     mood_rating = Column(Integer)  # 1-5 scale
-    goals = Column(JSON)  # Store goals as JSON
     goal_progress = Column(JSON)  # Store goal progress as JSON
     notes = Column(Text, nullable=True)
     
