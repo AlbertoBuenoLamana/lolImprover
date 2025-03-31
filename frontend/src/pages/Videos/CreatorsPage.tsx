@@ -34,23 +34,18 @@ import {
   createCreator, 
   updateCreator, 
   deleteCreator,
-  clearError,
+  clearCreatorError,
+  Creator
 } from '../../store/slices/creatorSlice';
 import { AppDispatch, RootState } from '../../store';
-// import { Creator, CreatorFormData } from '../../types';
 
-// Define types locally
-type Creator = {
-  id: number;
-  name: string;
-  description?: string;
-  website?: string;
-};
-
+// Form data type for creating/editing creators
 type CreatorFormData = {
   name: string;
   description?: string;
-  website?: string;
+  platform: string;
+  platform_id: string;
+  url?: string;
 };
 
 const CreatorsPage: React.FC = () => {
@@ -62,7 +57,9 @@ const CreatorsPage: React.FC = () => {
   const [formData, setFormData] = useState<CreatorFormData>({
     name: '',
     description: '',
-    website: '',
+    platform: 'youtube',
+    platform_id: '',
+    url: '',
   });
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [snackbar, setSnackbar] = useState({
@@ -81,7 +78,9 @@ const CreatorsPage: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      website: '',
+      platform: 'youtube',
+      platform_id: '',
+      url: '',
     });
     setDialogMode('create');
     setOpenDialog(true);
@@ -93,7 +92,9 @@ const CreatorsPage: React.FC = () => {
     setFormData({
       name: creator.name,
       description: creator.description || '',
-      website: creator.website || '',
+      platform: creator.platform || 'youtube',
+      platform_id: creator.platform_id || '',
+      url: creator.url || '',
     });
     setDialogMode('edit');
     setOpenDialog(true);
@@ -168,6 +169,9 @@ const CreatorsPage: React.FC = () => {
       ...prev,
       open: false,
     }));
+    if (error) {
+      dispatch(clearCreatorError());
+    }
   };
   
   return (
@@ -230,9 +234,9 @@ const CreatorsPage: React.FC = () => {
                       <TableCell>{creator.name}</TableCell>
                       <TableCell>{creator.description || '—'}</TableCell>
                       <TableCell>
-                        {creator.website ? (
-                          <a href={creator.website} target="_blank" rel="noopener noreferrer">
-                            {creator.website}
+                        {creator.url ? (
+                          <a href={creator.url} target="_blank" rel="noopener noreferrer">
+                            {creator.url}
                           </a>
                         ) : (
                           '—'
@@ -309,12 +313,12 @@ const CreatorsPage: React.FC = () => {
             />
             <TextField
               margin="dense"
-              name="website"
+              name="url"
               label="Website URL"
               type="url"
               fullWidth
               variant="outlined"
-              value={formData.website}
+              value={formData.url}
               onChange={handleInputChange}
               placeholder="https://..."
             />

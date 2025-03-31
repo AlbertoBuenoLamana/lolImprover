@@ -25,6 +25,7 @@ class User(Base):
     game_sessions = relationship("GameSession", back_populates="user")
     video_progress = relationship("VideoProgress", back_populates="user")
     goals = relationship("Goal", back_populates="user")
+    champion_pools = relationship("ChampionPool", back_populates="user")
 
 
 class GameSession(Base):
@@ -122,3 +123,32 @@ class Goal(Base):
     
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="goals")
+
+
+class ChampionPool(Base):
+    __tablename__ = "champion_pools"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String, nullable=True)  # Now nullable since categories are per champion
+    
+    # Relationships
+    user_id = Column(Integer, ForeignKey("users.id"))
+    user = relationship("User", back_populates="champion_pools")
+    champions = relationship("ChampionPoolEntry", back_populates="pool", cascade="all, delete-orphan")
+
+
+class ChampionPoolEntry(Base):
+    __tablename__ = "champion_pool_entries"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    champion_id = Column(String, nullable=False)  # Champion ID from Riot API
+    champion_name = Column(String, nullable=False)  # For convenience and display
+    notes = Column(Text, nullable=True)
+    category = Column(String, default="blind", nullable=True)  # blind, situational, test
+    created_at = Column(DateTime, default=func.now())
+    
+    # Relationships
+    pool_id = Column(Integer, ForeignKey("champion_pools.id"))
+    pool = relationship("ChampionPool", back_populates="champions")

@@ -46,17 +46,21 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import axios from '../../api/axios';
 import { RootState } from '../../store';
-import { fetchCreators, setVideoCreator } from '../../store/slices/creatorSlice';
+import { 
+  fetchCreators,
+  Creator
+} from '../../store/slices/creatorSlice';
 import { ThunkDispatch } from '@reduxjs/toolkit';
 import { AnyAction } from 'redux';
+import CustomSnackbar from '../../components/Ui/CustomSnackbar';
 
 // Manually define Creator type if needed
-type Creator = {
-  id: number;
-  name: string;
-  description?: string;
-  website?: string;
-};
+// type Creator = {
+//   id: number;
+//   name: string;
+//   description?: string;
+//   website?: string;
+// };
 
 // YouTube API interfaces
 interface YT {
@@ -110,7 +114,7 @@ interface VideoTutorial {
   category_id?: number;
   kemono_id?: string;
   service?: string;
-  creator_id?: string;
+  creator_id?: number | string;
   added_date?: string;
   published_date?: string;
   duration_seconds?: number;
@@ -654,6 +658,15 @@ const VideoPlayerPage: React.FC = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastOpen, setToastOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'warning' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   
   // Get auth token
   const token = useSelector((state: RootState) => state.auth.token);
@@ -1003,53 +1016,68 @@ const VideoPlayerPage: React.FC = () => {
   
   // Handle creator change
   const handleCreatorChange = async (e: SelectChangeEvent<unknown>) => {
+    const creatorId = e.target.value as number;
+    
+    if (!videoId) return;
+    
     try {
-      if (!video) return;
+      setSaveStatus('saving');
       
-      const creatorId = Number(e.target.value);
-      if (isNaN(creatorId)) return;
+      // Update the creator for the video
+      const response = await axios.put(`/api/videos/${videoId}/creator/${creatorId}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
-      // Call API to update the video's creator
-      await dispatch(setVideoCreator({ videoId: Number(videoId), creatorId }));
-      
-      // Update local video state with new creator
-      const selectedCreator = creators.find(c => c.id === creatorId);
-      if (selectedCreator) {
-        setVideo({
-          ...video,
-          creator: selectedCreator.name,
-          creator_relation_id: creatorId
-        } as VideoTutorial);
+      // Update video state with new creator
+      if (response.data) {
+        setVideo(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            creator: creators.find(c => c.id === creatorId)?.name || prev.creator,
+            creator_id: creatorId
+          };
+        });
+        
+        setSnackbar({
+          open: true,
+          message: 'Creator updated successfully',
+          severity: 'success'
+        });
       }
       
       setSaveStatus('saved');
-    } catch (error) {
-      console.error('Error setting creator:', error);
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Error updating creator:', err);
       setSaveStatus('error');
+      setSnackbar({
+        open: true,
+        message: 'Failed to update creator',
+        severity: 'error'
+      });
     }
   };
   
-  // Add a new function to toggle completed status
+  // Update the toggleCompleted function
   const toggleCompleted = async () => {
-    if (!videoId) {
-      console.error('Cannot toggle completed status: Video ID is missing');
-      return;
-    }
+    if (!videoId) return;
     
     const newCompletedStatus = !completed;
     setCompleted(newCompletedStatus);
     
     try {
-      const positionSeconds = videoProgress?.position_seconds || 0;
+      setSaveStatus('saving');
       
       const payload = {
-        position_seconds: positionSeconds,
+        position_seconds: videoProgress?.position_seconds || 0,
+        is_completed: newCompletedStatus,
         notes: notes,
-        is_bookmarked: bookmarked,
-        is_completed: newCompletedStatus
+        is_bookmarked: bookmarked
       };
-      
-      console.log('Toggling completed status with payload:', payload);
       
       const response = await axios.post(`/videos/${videoId}/progress`, payload, {
         headers: {
@@ -1058,80 +1086,67 @@ const VideoPlayerPage: React.FC = () => {
         }
       });
       
-      console.log('Completed status toggle response:', response.data);
-      
-      // Update local progress
-      setVideoProgress(prev => prev ? {
-        ...prev,
-        is_completed: newCompletedStatus,
-        is_watched: newCompletedStatus
-      } : {
-        // Create a minimal progress object if none exists
-        id: response.data.id,
-        video_id: Number(videoId),
-        user_id: response.data.user_id,
-        position_seconds: positionSeconds,
-        notes: notes,
-        is_bookmarked: bookmarked,
-        is_completed: newCompletedStatus,
-        is_watched: newCompletedStatus,
-        last_watched: new Date().toISOString(),
-        duration_seconds: 0,
-        watch_progress: positionSeconds,
-        personal_notes: notes
-      });
-      
-      setSaveStatus('saved');
-      
-      // Show toast notification
-      setToastMessage(`Video marked as ${newCompletedStatus ? 'completed' : 'unwatched'}`);
-      setToastOpen(true);
-      
-      // Reset save status after 2 seconds
-      setTimeout(() => {
-        setSaveStatus('idle');
-      }, 2000);
-    } catch (error: any) {
-      console.error('Error toggling completed status:', error);
-      
-      // More detailed error logging
-      if (error.response) {
-        console.error('Response error:', error.response.data);
-        console.error('Status code:', error.response.status);
-      } else if (error.request) {
-        console.error('Request was made but no response was received');
-      } else {
-        console.error('Error setting up request:', error.message);
+      if (response.data) {
+        // Show toast notification
+        setSnackbar({
+          open: true,
+          message: `Video marked as ${newCompletedStatus ? 'completed' : 'unwatched'}`,
+          severity: 'success'
+        });
+        
+        // Update local state
+        setVideoProgress(prev => prev ? {
+          ...prev,
+          is_completed: newCompletedStatus
+        } : null);
+        
+        setIsCompleted(newCompletedStatus);
       }
       
-      // Show error toast
-      setToastMessage('Failed to update completion status');
-      setToastOpen(true);
-      
-      // Revert UI state on error
-      setCompleted(!newCompletedStatus);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Error updating completion status:', err);
       setSaveStatus('error');
+      
+      // Show error toast
+      setSnackbar({
+        open: true,
+        message: 'Failed to update completion status',
+        severity: 'error'
+      });
+      
+      // Revert local state
+      setCompleted(!newCompletedStatus);
     }
   };
   
-  // Add a function to mark video as completed
+  // Update the handleToggleCompletion function
   const handleToggleCompletion = async () => {
     try {
-      const response = await axios.post(`/videos/${videoId}/progress`, {
-        is_completed: !isCompleted
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const response = await axios.post(`/videos/${videoId}/toggle-completion`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
+      // Update local state and show success message
       setIsCompleted(!isCompleted);
       
       // Show success toast
-      setToastMessage(`Video marked as ${!isCompleted ? 'completed' : 'not completed'}`);
-      setToastOpen(true);
-    } catch (error) {
-      console.error('Error updating video completion status:', error);
-      setToastMessage('Failed to update completion status');
-      setToastOpen(true);
+      setSnackbar({
+        open: true,
+        message: `Video marked as ${!isCompleted ? 'completed' : 'not completed'}`,
+        severity: 'success'
+      });
+    } catch (err) {
+      console.error('Error toggling completion status:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to update completion status',
+        severity: 'error'
+      });
     }
   };
   
@@ -1468,12 +1483,12 @@ const VideoPlayerPage: React.FC = () => {
         </Grid>
       </Box>
       
-      {/* Add Snackbar for notifications */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={4000}
-        onClose={() => setToastOpen(false)}
-        message={toastMessage}
+      {/* Add CustomSnackbar for notifications */}
+      <CustomSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        severity={snackbar.severity}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       />
     </Container>
   );

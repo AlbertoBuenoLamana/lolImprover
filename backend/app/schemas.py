@@ -273,3 +273,50 @@ class Goal(GoalBase):
 
 class GoalStatusUpdate(BaseModel):
     status: Literal["active", "completed", "archived"]
+
+
+# Champion Pool schemas
+class ChampionPoolEntryBase(BaseModel):
+    champion_id: str
+    champion_name: str
+    notes: Optional[str] = None
+    category: Optional[Literal["blind", "situational", "test"]] = "blind"
+
+
+class ChampionPoolEntryCreate(ChampionPoolEntryBase):
+    pass
+
+
+class ChampionPoolEntry(ChampionPoolEntryBase):
+    id: int
+    pool_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ChampionPoolBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    category: Optional[Literal["blind", "situational", "test"]] = None  # Now optional
+
+
+class ChampionPoolCreate(ChampionPoolBase):
+    champions: Optional[List[ChampionPoolEntryCreate]] = None
+
+
+class ChampionPoolUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[Literal["blind", "situational", "test"]] = None
+    champions: Optional[List[ChampionPoolEntryCreate]] = None
+
+
+class ChampionPool(ChampionPoolBase):
+    id: int
+    user_id: int
+    champions: List[ChampionPoolEntry] = []
+
+    class Config:
+        from_attributes = True

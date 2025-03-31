@@ -1,251 +1,190 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-// import { Creator, CreatorFormData } from '../../types';
 import axios from '../../api/axios';
-import { extractErrorMessage } from '../../utils/errorHandler';
+import { RootState } from '../index';
 
-// Define types locally
-type Creator = {
+// Types
+export interface Creator {
   id: number;
   name: string;
   description?: string;
-  website?: string;
-};
+  platform: string;
+  platform_id: string;
+  url?: string;
+  image_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
-type CreatorFormData = {
-  name: string;
-  description?: string;
-  website?: string;
-};
-
-interface CreatorState {
+export interface CreatorState {
   creators: Creator[];
-  selectedCreator: Creator | null;
+  currentCreator: Creator | null;
   loading: boolean;
   error: string | null;
 }
 
+// Initial state
 const initialState: CreatorState = {
   creators: [],
-  selectedCreator: null,
+  currentCreator: null,
   loading: false,
   error: null,
 };
 
-// Fetch all creators
+// Async thunks
 export const fetchCreators = createAsyncThunk(
-  'creators/fetchAll',
-  async (_, { getState, rejectWithValue }) => {
+  'creators/fetchCreators',
+  async (_, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as { auth: { token: string } };
-      
-      const response = await axios.get('/videos/creators/', {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
-      
+      const response = await axios.get('/api/videos/creators/');
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(extractErrorMessage(error));
+      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch creators');
     }
   }
 );
 
-// Fetch a single creator
-export const fetchCreator = createAsyncThunk(
-  'creators/fetchOne',
-  async (id: number, { getState, rejectWithValue }) => {
+export const fetchCreatorById = createAsyncThunk(
+  'creators/fetchCreatorById',
+  async (id: number, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as { auth: { token: string } };
-      
-      const response = await axios.get(`/videos/creators/${id}`, {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
-      
+      const response = await axios.get(`/api/videos/creators/${id}`);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(extractErrorMessage(error));
+      return rejectWithValue(error.response?.data?.detail || 'Failed to fetch creator');
     }
   }
 );
 
-// Create a new creator
 export const createCreator = createAsyncThunk(
-  'creators/create',
-  async (creatorData: CreatorFormData, { getState, rejectWithValue }) => {
+  'creators/createCreator',
+  async (creatorData: Omit<Creator, 'id'>, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as { auth: { token: string } };
-      
-      const response = await axios.post('/videos/creators/', creatorData, {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      const response = await axios.post('/api/videos/creators/', creatorData);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(extractErrorMessage(error));
+      return rejectWithValue(error.response?.data?.detail || 'Failed to create creator');
     }
   }
 );
 
-// Update an existing creator
 export const updateCreator = createAsyncThunk(
-  'creators/update',
-  async ({ id, creatorData }: { id: number; creatorData: CreatorFormData }, { getState, rejectWithValue }) => {
+  'creators/updateCreator',
+  async ({ id, creatorData }: { id: number; creatorData: Partial<Creator> }, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as { auth: { token: string } };
-      
-      const response = await axios.put(`/videos/creators/${id}`, creatorData, {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
+      const response = await axios.put(`/api/videos/creators/${id}`, creatorData);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(extractErrorMessage(error));
+      return rejectWithValue(error.response?.data?.detail || 'Failed to update creator');
     }
   }
 );
 
-// Delete a creator
 export const deleteCreator = createAsyncThunk(
-  'creators/delete',
-  async (id: number, { getState, rejectWithValue }) => {
+  'creators/deleteCreator',
+  async (id: number, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as { auth: { token: string } };
-      
-      await axios.delete(`/videos/creators/${id}`, {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
-      
+      await axios.delete(`/api/videos/creators/${id}`);
       return id;
     } catch (error: any) {
-      return rejectWithValue(extractErrorMessage(error));
+      return rejectWithValue(error.response?.data?.detail || 'Failed to delete creator');
     }
   }
 );
 
-// Set creator for a video
-export const setVideoCreator = createAsyncThunk(
-  'creators/setVideoCreator',
-  async ({ videoId, creatorId }: { videoId: number; creatorId: number }, { getState, rejectWithValue }) => {
-    try {
-      const { auth } = getState() as { auth: { token: string } };
-      
-      const response = await axios.put(`/videos/${videoId}/set-creator/${creatorId}`, {}, {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(extractErrorMessage(error));
-    }
-  }
-);
-
+// Slice
 const creatorSlice = createSlice({
   name: 'creators',
   initialState,
   reducers: {
-    clearError: (state) => {
+    clearCreatorError(state) {
       state.error = null;
     },
-    setSelectedCreator: (state, action: PayloadAction<Creator | null>) => {
-      state.selectedCreator = action.payload;
+    setCurrentCreator(state, action: PayloadAction<Creator | null>) {
+      state.currentCreator = action.payload;
     },
   },
   extraReducers: (builder) => {
-    // Fetch all creators
-    builder.addCase(fetchCreators.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchCreators.fulfilled, (state, action: PayloadAction<Creator[]>) => {
-      state.loading = false;
-      state.creators = action.payload;
-    });
-    builder.addCase(fetchCreators.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-    
-    // Fetch single creator
-    builder.addCase(fetchCreator.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchCreator.fulfilled, (state, action: PayloadAction<Creator>) => {
-      state.loading = false;
-      state.selectedCreator = action.payload;
-    });
-    builder.addCase(fetchCreator.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-    
-    // Create creator
-    builder.addCase(createCreator.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(createCreator.fulfilled, (state, action: PayloadAction<Creator>) => {
-      state.loading = false;
-      state.creators.push(action.payload);
-    });
-    builder.addCase(createCreator.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-    
-    // Update creator
-    builder.addCase(updateCreator.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(updateCreator.fulfilled, (state, action: PayloadAction<Creator>) => {
-      state.loading = false;
-      const index = state.creators.findIndex((creator: Creator) => creator.id === action.payload.id);
-      if (index !== -1) {
-        state.creators[index] = action.payload;
-      }
-      if (state.selectedCreator && state.selectedCreator.id === action.payload.id) {
-        state.selectedCreator = action.payload;
-      }
-    });
-    builder.addCase(updateCreator.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
-    
-    // Delete creator
-    builder.addCase(deleteCreator.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(deleteCreator.fulfilled, (state, action: PayloadAction<number>) => {
-      state.loading = false;
-      state.creators = state.creators.filter((creator: Creator) => creator.id !== action.payload);
-      if (state.selectedCreator && state.selectedCreator.id === action.payload) {
-        state.selectedCreator = null;
-      }
-    });
-    builder.addCase(deleteCreator.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    });
+    builder
+      // Fetch creators
+      .addCase(fetchCreators.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCreators.fulfilled, (state, action) => {
+        state.loading = false;
+        state.creators = action.payload;
+      })
+      .addCase(fetchCreators.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Fetch creator by ID
+      .addCase(fetchCreatorById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCreatorById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentCreator = action.payload;
+      })
+      .addCase(fetchCreatorById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Create creator
+      .addCase(createCreator.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createCreator.fulfilled, (state, action) => {
+        state.loading = false;
+        state.creators.push(action.payload);
+      })
+      .addCase(createCreator.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Update creator
+      .addCase(updateCreator.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCreator.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.creators.findIndex(c => c.id === action.payload.id);
+        if (index !== -1) {
+          state.creators[index] = action.payload;
+        }
+        if (state.currentCreator && state.currentCreator.id === action.payload.id) {
+          state.currentCreator = action.payload;
+        }
+      })
+      .addCase(updateCreator.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Delete creator
+      .addCase(deleteCreator.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteCreator.fulfilled, (state, action) => {
+        state.loading = false;
+        state.creators = state.creators.filter(c => c.id !== action.payload);
+        if (state.currentCreator && state.currentCreator.id === action.payload) {
+          state.currentCreator = null;
+        }
+      })
+      .addCase(deleteCreator.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
-export const { clearError, setSelectedCreator } = creatorSlice.actions;
+export const { clearCreatorError, setCurrentCreator } = creatorSlice.actions;
 export default creatorSlice.reducer; 

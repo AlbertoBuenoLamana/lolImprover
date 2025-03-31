@@ -18,7 +18,7 @@ import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import FlagIcon from '@mui/icons-material/Flag';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
 import { RootState } from '../store';
 import Logo from '../components/Ui/Logo';
 
@@ -51,47 +51,6 @@ const HomePage: React.FC = () => {
               Login
             </Button>
           </Box>
-        )}
-
-        {isAuthenticated && user && (
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              p: 3, 
-              mb: 4, 
-              mt: 4, 
-              borderRadius: 2,
-              bgcolor: 'background.paper',
-              backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9))',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <DashboardIcon color="primary" sx={{ fontSize: 30, mr: 2 }} />
-              <Typography variant="h5">Your Dashboard</Typography>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ textAlign: 'center', p: 1 }}>
-                  <Typography variant="h4">{user.stats?.game_sessions_count || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Game Sessions</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ textAlign: 'center', p: 1 }}>
-                  <Typography variant="h4">{user.stats?.goals_achieved_count || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Goals Achieved</Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
-                <Box sx={{ textAlign: 'center', p: 1 }}>
-                  <Typography variant="h4">{user.stats?.videos_watched_count || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Videos Watched</Typography>
-                </Box>
-              </Grid>
-            </Grid>
-          </Paper>
         )}
         
         <Grid container spacing={3} sx={{ mt: 2 }}>
@@ -180,7 +139,35 @@ const HomePage: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={6} lg={6}>
+          <Grid item xs={12} md={6} lg={4}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 5 } }}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <SportsMartialArtsIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
+                  <Typography variant="h5" component="h2">
+                    Champion Pools
+                  </Typography>
+                </Box>
+                <Typography>
+                  Organize your champion roster into strategic pools. Create collections for blind pick, situational counters, 
+                  and champions you're currently testing. Optimize your champion selection for every game situation.
+                </Typography>
+              </CardContent>
+              <CardActions sx={{ p: 2 }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  component={RouterLink}
+                  to={isAuthenticated ? "/champion-pools" : "/login"}
+                >
+                  {isAuthenticated ? "Manage Champion Pools" : "Login to Access"}
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6} lg={4}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 5 } }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -208,7 +195,7 @@ const HomePage: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={6} lg={6}>
+          <Grid item xs={12} md={6} lg={4}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { transform: 'translateY(-5px)', boxShadow: 5 } }}>
               <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -225,7 +212,7 @@ const HomePage: React.FC = () => {
               <CardActions sx={{ p: 2 }}>
                 <Button
                   fullWidth
-                  variant="contained" 
+                  variant="contained"
                   color="primary"
                   component={RouterLink}
                   to={isAuthenticated ? "/profile" : "/login"}

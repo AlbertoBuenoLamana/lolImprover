@@ -9,7 +9,6 @@ import {
   ListItemText,
   Divider,
   Box,
-  Typography,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import VideogameAssetIcon from '@mui/icons-material/VideogameAsset';
@@ -18,8 +17,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GroupIcon from '@mui/icons-material/Group';
 import FlagIcon from '@mui/icons-material/Flag';
+import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
 import { RootState } from '../../store';
-import { User } from '../../types';
 import Logo from '../Ui/Logo';
 
 interface SidebarProps {
@@ -37,6 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
     { text: 'Game Sessions', icon: <VideogameAssetIcon />, path: '/game-sessions', requireAuth: true },
     { text: 'Goals', icon: <FlagIcon />, path: '/goals', requireAuth: true },
     { text: 'Video Tutorials', icon: <VideoLibraryIcon />, path: '/video-tutorials', requireAuth: true },
+    { text: 'Champion Pools', icon: <SportsMartialArtsIcon />, path: '/champion-pools', requireAuth: true },
     { text: 'Creators', icon: <GroupIcon />, path: '/creators', requireAuth: true },
     { text: 'Profile', icon: <PersonIcon />, path: '/profile', requireAuth: true },
     { text: 'Admin Dashboard', icon: <AdminPanelSettingsIcon />, path: '/admin', requireAuth: true, requireAdmin: true },

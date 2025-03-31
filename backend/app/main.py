@@ -12,7 +12,7 @@ import json
 from . import models, schemas
 from .database import engine, SessionLocal, get_db
 from .auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
-from .routers import users, game_sessions, videos, goals
+from .routers import users, game_sessions, videos, goals, champion_pools
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="LoL Improve API")
+app = FastAPI(title="LoL Improve API", version="1.0.0")
 
 # Configure CORS
 origins = [
@@ -97,12 +97,14 @@ app.include_router(users.router)
 app.include_router(game_sessions.router)
 app.include_router(videos.router)
 app.include_router(goals.router)
+app.include_router(champion_pools.router)
 
 # Also include routers with /api prefix for backwards compatibility
 app.include_router(users.router, prefix="/api")
 app.include_router(game_sessions.router, prefix="/api")
 app.include_router(videos.router, prefix="/api")
 app.include_router(goals.router, prefix="/api")
+app.include_router(champion_pools.router, prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

@@ -25,6 +25,7 @@ import {
   CardContent,
   Tooltip,
   Snackbar,
+  Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -38,9 +39,12 @@ import {
 import { RootState, AppDispatch } from '../../store';
 import { GameSessionFormData, Goal, GameSessionGoalProgress, GameSessionCreate } from '../../types';
 import ChampionSelect from '../../components/GameSessions/ChampionSelect';
+import ChampionCategorySelector from '../../components/GameSessions/ChampionCategorySelector';
 import GameSessionGoals from '../../components/Feature/GameSessionGoals';
 import ReviewTimer from '../../components/GameSessions/ReviewTimer';
 import { fetchGoals } from '../../store/slices/goalSlice';
+import { fetchChampionPools } from '../../store/slices/championPoolSlice';
+import ChampionCard from '../../components/Ui/ChampionCard';
 
 // Validation schema
 const GameSessionSchema = Yup.object().shape({
@@ -72,6 +76,7 @@ const GameSessionFormPage: React.FC = () => {
   const dispatch: AppDispatch = useDispatch();
   const { currentSession, loading, error } = useSelector((state: RootState) => state.gameSessions as GameSessionState);
   const { goals } = useSelector((state: RootState) => state.goals);
+  const { pools, loading: poolsLoading } = useSelector((state: RootState) => state.championPools);
   
   // Filter to only show active goals
   const activeGoals = goals.filter(goal => goal.status === 'active');
@@ -131,6 +136,9 @@ const GameSessionFormPage: React.FC = () => {
     
     // Load the goals for the user
     dispatch(fetchGoals());
+    
+    // Load champion pools
+    dispatch(fetchChampionPools());
     
     return () => {
       dispatch(clearCurrentSession());
@@ -246,6 +254,11 @@ const GameSessionFormPage: React.FC = () => {
     navigate('/game-sessions');
   };
   
+  // Handle selecting a champion from pool
+  const handleSelectChampionFromPool = (championName: string, setFieldValue: any) => {
+    setFieldValue('player_character', championName);
+  };
+  
   if (isEditMode && loading && !currentSession) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
@@ -286,6 +299,32 @@ const GameSessionFormPage: React.FC = () => {
             {({ values, errors, touched, setFieldValue }) => (
               <Form>
                 <Grid container spacing={3}>
+                  {/* Champion Pool Section */}
+                  <Grid item xs={12}>
+                    <Typography variant="h6" gutterBottom>Your Champion Pools</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Select a champion from your pools or search below
+                    </Typography>
+                    
+                    {poolsLoading ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    ) : pools.length > 0 ? (
+                      <ChampionCategorySelector
+                        pools={pools}
+                        loading={poolsLoading}
+                        onSelectChampion={(championName) => handleSelectChampionFromPool(championName, setFieldValue)}
+                        selectedChampionName={values.player_character}
+                      />
+                    ) : (
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        You don't have any champion pools yet. <Button size="small" onClick={() => navigate('/champion-pools')}>Create a pool</Button>
+                      </Alert>
+                    )}
+                    <Divider sx={{ my: 2 }} />
+                  </Grid>
+                  
                   <Grid item xs={12} md={6}>
                     <ChampionSelect
                       id="player_character"

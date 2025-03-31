@@ -20,6 +20,7 @@ import { RootState, AppDispatch } from './store';
 import AdminDashboard from './pages/Admin/AdminDashboard';
 import CreatorsPage from './pages/Videos/CreatorsPage';
 import GoalManagementPage from './pages/GoalManagementPage';
+import ChampionPoolsPage from './pages/ChampionPoolsPage';
 import type { User } from './types';
 
 const App: React.FC = () => {
@@ -60,6 +61,9 @@ const App: React.FC = () => {
             
             {/* Goals routes */}
             <Route path="goals" element={<GoalManagementPage />} />
+            
+            {/* Champion Pools routes */}
+            <Route path="champion-pools" element={<ChampionPoolsPage />} />
             
             <Route path="profile" element={<ProfilePage />} />
             <Route path="creators" element={<CreatorsPage />} />
