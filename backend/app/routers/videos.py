@@ -299,8 +299,8 @@ def read_videos(
             # Default to sorting by id if an invalid sort field is provided
             sort_field = models.VideoTutorial.id
         
-        # Only apply the sort if we have a valid sort field
-        if sort_field:
+        # Only apply the sort if we have a valid sort field and we're not sorting by last_watched
+        if sort_field and not last_watched_sort:
             if sort_order.lower() == "asc":
                 query = query.order_by(sort_field.asc())
             else:
@@ -308,8 +308,8 @@ def read_videos(
     
     videos = query.offset(skip).limit(limit).all()
     
-    # If progress information is requested, fetch and attach it
-    if 'progress' in expand_options:
+    # If progress information is requested OR we need to sort by last_watched
+    if 'progress' in expand_options or sort_by == "last_watched":
         # Get all video IDs
         video_ids = [video.id for video in videos]
         
@@ -343,17 +343,33 @@ def read_videos(
                 }
                 # Use a different attribute name to avoid conflict with the relationship
                 setattr(video, "progress_data", progress_dict)
+            else:
+                # For videos without progress, set an empty progress_data with default values
+                setattr(video, "progress_data", {
+                    "last_watched": None,
+                    "is_watched": False,
+                    "watch_progress": 0,
+                    "personal_notes": "",
+                    "is_bookmarked": False,
+                    # Frontend compatibility fields
+                    "notes": "",
+                    "position_seconds": 0,
+                    "is_completed": False
+                })
         
         # If we need to sort by last_watched, do it after attaching progress
-        if last_watched_sort:
-            def get_last_watched(video):
+        if sort_by == "last_watched":
+            def get_last_watched_timestamp(video):
+                # For videos with progress data and last_watched timestamp
                 if hasattr(video, "progress_data") and video.progress_data.get("last_watched"):
-                    return video.progress_data["last_watched"]
-                return datetime.min
-
+                    return video.progress_data["last_watched"] or datetime(1900, 1, 1)
+                # For videos without progress or haven't been watched
+                return datetime(1900, 1, 1)  # Use a very old date for sorting
+            
+            # Sort all videos by the last_watched timestamp
             videos.sort(
-                key=get_last_watched, 
-                reverse=(sort_order.lower() != "asc")
+                key=get_last_watched_timestamp,
+                reverse=(sort_order.lower() == "desc")
             )
     
     return videos
@@ -762,6 +778,7 @@ def search_videos(
     bookmarked: bool = None,
     sort_by: str = "published_date",
     sort_order: str = "desc",
+    expand: str = None,
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -780,10 +797,14 @@ def search_videos(
     - **bookmarked**: Filter by bookmarked status
     - **sort_by**: Field to sort by (published_date, title, last_watched)
     - **sort_order**: 'asc' or 'desc'
+    - **expand**: Comma-separated list of related data to include ('creator', 'progress')
     """
     # Start with base query
     query = db.query(models.VideoTutorial)
     
+    # Parse expand parameter
+    expand_options = expand.split(',') if expand else []
+
     # Apply text search if provided
     if q:
         search_query = f"%{q}%"
@@ -850,8 +871,8 @@ def search_videos(
             # Default to sorting by id if an invalid sort field is provided
             sort_field = models.VideoTutorial.id
         
-        # Only apply the sort if we have a valid sort field
-        if sort_field:
+        # Only apply the sort if we have a valid sort field and we're not sorting by last_watched
+        if sort_field and not last_watched_sort:
             if sort_order.lower() == "asc":
                 query = query.order_by(sort_field.asc())
             else:
@@ -866,8 +887,8 @@ def search_videos(
     # Apply pagination
     videos = query.offset(skip).limit(limit).all()
     
-    # If progress information is requested, fetch and attach it
-    if 'progress' in expand_options:
+    # If progress information is requested OR we need to sort by last_watched
+    if 'progress' in expand_options or sort_by == "last_watched":
         # Get all video IDs
         video_ids = [video.id for video in videos]
         
@@ -901,17 +922,33 @@ def search_videos(
                 }
                 # Use a different attribute name to avoid conflict with the relationship
                 setattr(video, "progress_data", progress_dict)
+            else:
+                # For videos without progress, set an empty progress_data with default values
+                setattr(video, "progress_data", {
+                    "last_watched": None,
+                    "is_watched": False,
+                    "watch_progress": 0,
+                    "personal_notes": "",
+                    "is_bookmarked": False,
+                    # Frontend compatibility fields
+                    "notes": "",
+                    "position_seconds": 0,
+                    "is_completed": False
+                })
         
         # If we need to sort by last_watched, do it after attaching progress
-        if last_watched_sort:
-            def get_last_watched(video):
+        if sort_by == "last_watched":
+            def get_last_watched_timestamp(video):
+                # For videos with progress data and last_watched timestamp
                 if hasattr(video, "progress_data") and video.progress_data.get("last_watched"):
-                    return video.progress_data["last_watched"]
-                return datetime.min
-
+                    return video.progress_data["last_watched"] or datetime(1900, 1, 1)
+                # For videos without progress or haven't been watched
+                return datetime(1900, 1, 1)  # Use a very old date for sorting
+            
+            # Sort all videos by the last_watched timestamp
             videos.sort(
-                key=get_last_watched, 
-                reverse=(sort_order.lower() != "asc")
+                key=get_last_watched_timestamp,
+                reverse=(sort_order.lower() == "desc")
             )
     
     return videos

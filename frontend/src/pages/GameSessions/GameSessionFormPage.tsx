@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Formik, Form, Field, FieldArray, FormikErrors, FormikTouched } from 'formik';
@@ -45,6 +45,7 @@ import ReviewTimer from '../../components/GameSessions/ReviewTimer';
 import { fetchGoals } from '../../store/slices/goalSlice';
 import { fetchChampionPools } from '../../store/slices/championPoolSlice';
 import ChampionCard from '../../components/Ui/ChampionCard';
+import SpeakerNotesIcon from '@mui/icons-material/SpeakerNotes';
 
 // Validation schema
 const GameSessionSchema = Yup.object().shape({
@@ -86,6 +87,12 @@ const GameSessionFormPage: React.FC = () => {
   
   // State for notification when timer ends
   const [showTimerNotification, setShowTimerNotification] = useState<boolean>(false);
+  
+  // State for the voice reminder
+  const [reminderIntervalSeconds, setReminderIntervalSeconds] = useState<string>('60');
+  const [isReminderActive, setIsReminderActive] = useState<boolean>(false);
+  const reminderTimerId = useRef<NodeJS.Timeout | null>(null);
+  const speechSynth = window.speechSynthesis; // Reference to speech synthesis
   
   const isEditMode = !!id;
   
@@ -227,6 +234,89 @@ const GameSessionFormPage: React.FC = () => {
   const handleCloseNotification = () => {
     setShowTimerNotification(false);
   };
+  
+  // Function to speak the reminder phrase
+  const speakReminder = useCallback(() => {
+    if (!speechSynth) {
+      console.error("Web Speech API not supported in this browser.");
+      alert("Speech synthesis not supported in this browser.");
+      setIsReminderActive(false); // Disable if not supported
+      return;
+    }
+
+    // Create the utterance
+    const utterance = new SpeechSynthesisUtterance("¿Qué es lo siguiente?");
+
+    // Attempt to set Spanish voice
+    const voices = speechSynth.getVoices();
+    const spanishVoice = voices.find(voice => voice.lang.startsWith('es'));
+    if (spanishVoice) {
+      utterance.voice = spanishVoice;
+    } else {
+      utterance.lang = 'es-ES'; // Fallback to setting language
+      console.warn("Spanish voice not found, using default voice with lang='es-ES'.");
+    }
+
+    utterance.rate = 1; // Adjust rate as needed
+    utterance.pitch = 1; // Adjust pitch as needed
+
+    // Speak the phrase
+    speechSynth.speak(utterance);
+  }, [speechSynth]);
+
+  // Function to toggle the reminder
+  const handleToggleReminder = () => {
+    if (isReminderActive) {
+      // Stop the reminder
+      if (reminderTimerId.current) {
+        clearInterval(reminderTimerId.current);
+        reminderTimerId.current = null;
+      }
+      setIsReminderActive(false);
+      // Optionally cancel any ongoing speech
+      if (speechSynth.speaking) {
+         speechSynth.cancel();
+      }
+    } else {
+      // Start the reminder
+      const interval = parseInt(reminderIntervalSeconds, 10);
+      if (isNaN(interval) || interval <= 0) {
+        alert("Please enter a valid positive number for the interval in seconds.");
+        return;
+      }
+
+      // Speak immediately
+      speakReminder();
+
+      // Start the interval
+      reminderTimerId.current = setInterval(() => {
+        speakReminder();
+      }, interval * 1000); // Convert seconds to milliseconds
+
+      setIsReminderActive(true);
+    }
+  };
+
+  // Cleanup interval on component unmount
+  useEffect(() => {
+    // Pre-load voices (optional but good practice)
+    if (speechSynth) {
+      speechSynth.getVoices(); // Call once to potentially trigger voice loading
+      speechSynth.onvoiceschanged = () => {
+         console.log("Speech synthesis voices loaded.");
+      };
+    }
+
+    return () => {
+      if (reminderTimerId.current) {
+        clearInterval(reminderTimerId.current);
+      }
+      // Stop any speech when navigating away
+      if (speechSynth && speechSynth.speaking) {
+        speechSynth.cancel();
+      }
+    };
+  }, [speechSynth]);
   
   const handleSubmit = async (values: GameSessionFormData) => {
     // Create session data with only the fields expected by the backend
@@ -430,6 +520,35 @@ const GameSessionFormPage: React.FC = () => {
                       helperText={touched.notes && errors.notes}
                     />
                   </Grid>
+                  
+                  {/* --- Reminder Feature --- */}
+                  <Grid item xs={12}>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="h6" gutterBottom>Voice Reminder</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                     <TextField
+                       fullWidth
+                       label="Reminder Interval (seconds)"
+                       type="number"
+                       value={reminderIntervalSeconds}
+                       onChange={(e) => setReminderIntervalSeconds(e.target.value)}
+                       disabled={isReminderActive} // Disable input while active
+                       inputProps={{ min: "1" }}
+                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6} sx={{ display: 'flex', alignItems: 'center' }}>
+                     <Button
+                       variant="contained"
+                       color={isReminderActive ? "secondary" : "primary"}
+                       onClick={handleToggleReminder}
+                       startIcon={<SpeakerNotesIcon />}
+                       fullWidth
+                     >
+                       {isReminderActive ? 'Stop Reminder' : 'Start Reminder'}
+                     </Button>
+                  </Grid>
+                   {/* --- End Reminder Feature --- */}
                   
                   <Grid item xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
